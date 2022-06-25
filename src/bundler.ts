@@ -132,7 +132,7 @@ export class ApiRefBundler {
       if (data[external]) { return data }
 
       for (const key of Object.keys(rest)) {
-        if (typeof rest[key] !== "object") { continue }
+        if (typeof rest[key] !== "object" || rest[key] === null) { continue }
         await this.crawl(rest[key], path, defPrefix)
       }
 
