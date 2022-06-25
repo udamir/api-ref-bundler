@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "properties": {
+    "hello": {
+      "$ref": "./xyz/baz.json#/definitions/World"
+    },
+    "new": {
+      "$ref": "./xyz/baz.json#/definitions/New"
+    },
+    "world": {
+      "$ref": "#/definitions/World"
+    }
+  },
+  "definitions": {
+    "World": {
+      "type": "number"
+    }
+  }
+}

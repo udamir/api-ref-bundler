@@ -1,0 +1,14 @@
+{
+  "type": "object",
+  "properties": {
+    "hello": {
+      "type": "string"
+    },
+    "new": {
+      "$ref": "./xyz/baz.json#/definitions/New"
+    },
+    "baz": {
+      "$ref": "./xyz/baz.json"
+    }
+  }
+}

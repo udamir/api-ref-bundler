@@ -1,0 +1,65 @@
+{
+  "name": "api-ref-bundler",
+  "version": "0.0.1",
+  "description": "Bundle all external $ref in Json based API document into single document",
+  "module": "dist/esm/index.js",
+  "main": "dist/cjs/index.js",
+  "types": "dist/cjs/index.d.ts",
+  "files": [
+    "dist",
+    "browser"
+  ],
+  "browser": {
+    "./dist/cjs/index.js": "./browser/api-ref-bundler.js"
+  },
+  "scripts": {
+    "build": "tsc && tsc --module commonjs --outDir dist/cjs",
+    "test": "jest --verbose",
+    "prepublish": "rm -r dist || true && npm run build && npm run build:web",
+    "test:coverage": "jest --verbose --coverage",
+    "build:web": "webpack"
+  },
+  "keywords": [
+    "jsonschema",
+    "openapi",
+    "swagger",
+    "asyncapi",
+    "api",
+    "ref",
+    "bundler"
+  ],
+  "author": "Damir Yusipov",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^26.0.0",
+    "@types/js-yaml": "^4.0.5",
+    "jest": "^26.0.1",
+    "js-yaml": "^4.1.0",
+    "ts-jest": "^26.1.0",
+    "ts-loader": "^8.0.8",
+    "ts-node": "^10.7.0",
+    "tslint": "^6.1.2",
+    "typescript": "^4.6.2",
+    "uglifyjs-webpack-plugin": "^2.2.0",
+    "webpack": "^4.43.0",
+    "webpack-cli": "^3.3.12"
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest"
+    },
+    "testRegex": "(/test/.*(\\.|/)(test|spec))\\.(ts?|tsx?|js?|jsx?)$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ],
+    "modulePathIgnorePatterns": [
+      "<rootDir>/dist/"
+    ],
+    "collectCoverage": true
+  }
+}
