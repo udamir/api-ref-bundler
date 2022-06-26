@@ -32,8 +32,8 @@ import { promises as fs } from 'fs'
 import { bundle } from 'api-ref-bundler'
 
 const bundler = new ApiRefBundler("schema.json", async (sourcePath) => {
-  const file = await fs.readFile(path.join(__dirname, "./", sourcePath))
-  return JSON.parse(file.toString())      
+  const schema = await fs.readFile(path.join(__dirname, "./", sourcePath), "utf8")
+  return JSON.parse(schema)      
 })
 
 bundler.run().then(schema => {
@@ -45,7 +45,7 @@ bundler.run().then(schema => {
 
 ### Browsers
 
-A browser version of `api-smart-diff` is also available via CDN:
+A browser version of `api-ref-bundler` is also available via CDN:
 ```html
 <script src="https://cdn.jsdelivr.net/npm/api-ref-bundler@latest/browser/api-ref-bundler.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/api-ref-bundler@latest/browser/api-ref-bundler.js"></script>
