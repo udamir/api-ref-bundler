@@ -19,8 +19,8 @@ describe("Test jsonSchema ref bundle", () => {
   it("baz.json should be bundled", async () => {
     const baz = await bundle("./xyz/baz.json")
     expect(baz.properties.new).toMatchObject({ $ref: "#/definitions/New" })
-    expect(baz.definitions.New).toMatchObject({ $ref: "#/definitions/foo.json" })
-    expect(baz.definitions["foo.json"]).toMatchObject({
+    expect(baz.definitions.New).toMatchObject({ $ref: "#/definitions/foo" })
+    expect(baz.definitions["foo"]).toMatchObject({
       type: "object",
       properties: {
         hello: {
@@ -39,30 +39,30 @@ describe("Test jsonSchema ref bundle", () => {
   it("bar.json should be bundled", async () => {
     const bar = await bundle("bar.json")
     expect(bar.properties.hello).toMatchObject({ $ref: "#/definitions/World1" })
-    expect(bar.properties.new).toMatchObject({ $ref: "#/definitions/foo.json" })
+    expect(bar.properties.new).toMatchObject({ $ref: "#/definitions/foo" })
     expect(bar.definitions.World1).toMatchObject({ type: "string" })
-    expect(bar.definitions["baz.json"]).toMatchObject({
+    expect(bar.definitions["baz"]).toMatchObject({
       type: "object",
       properties: {
         hello: {
           $ref: "#/definitions/World1"
         },
         new: {
-          $ref: "#/definitions/foo.json"
+          $ref: "#/definitions/foo"
         }
       }
     })
-    expect(bar.definitions["foo.json"]).toMatchObject({
+    expect(bar.definitions["foo"]).toMatchObject({
       type: "object",
       properties: {
         hello: {
           type: "string"
         },
         new: {
-          $ref: "#/definitions/foo.json"
+          $ref: "#/definitions/foo"
         },
         baz: {
-          $ref: "#/definitions/baz.json"
+          $ref: "#/definitions/baz"
         }
       }
     })
@@ -71,16 +71,16 @@ describe("Test jsonSchema ref bundle", () => {
   it("foo.json should be bundled", async () => {
     const foo = await bundle("foo.json")
     expect(foo.properties.new).toMatchObject({ $ref: "#" })
-    expect(foo.properties.baz).toMatchObject({ $ref: "#/definitions/baz.json" })
-    expect(foo.definitions["baz.json-World"]).toMatchObject({ type: "string" })
-    expect(foo.definitions["baz.json"]).toMatchObject({
+    expect(foo.properties.baz).toMatchObject({ $ref: "#/definitions/baz" })
+    expect(foo.definitions["baz-World"]).toMatchObject({ type: "string" })
+    expect(foo.definitions["baz"]).toMatchObject({
       type: "object",
       properties: {
         hello: {
-          $ref: "#/definitions/baz.json-World"
+          $ref: "#/definitions/baz-World"
         },
         new: {
-          $ref: "#/definitions/baz.json"
+          $ref: "#/definitions/baz"
         }
       }
     })

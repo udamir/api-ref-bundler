@@ -23,7 +23,8 @@ export const relativePath = (path: string, basePath?: string) => {
 }
 
 export const filename = (str: string) => {
-  return str.split("/").pop()
+  const name = str.split("/").pop() || ""
+  return name?.replace(new RegExp(".(json|yaml|yml)$", "gi"), "")
 }
 
 export const isJsonSchema = (value: any): boolean => {

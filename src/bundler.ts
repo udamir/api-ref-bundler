@@ -61,9 +61,11 @@ export class ApiRefBundler {
       return { $ref: "#" + link } 
     } 
 
+    const _ref = sourcePath + "#" + link
+
     // check if ref already added to root definitions
-    if (this.defLinks.has(sourcePath + "#" + link)) {
-      return { $ref: this.defLinks.get(sourcePath + "#" + link), [external]: this.basePath }
+    if (this.defLinks.has(_ref)) {
+      return { $ref: this.defLinks.get(_ref), [external]: this.basePath }
     }
 
     // resolve source
@@ -87,17 +89,17 @@ export class ApiRefBundler {
 
       // generate new definition name
       const name = value.$id || filename(link || sourcePath)
-      const defName = this.uniqueDefinitionName(!source && defPrefix ? defPrefix + "-" + name : name)
+      const defName = this.uniqueDefinitionName(!source && defPrefix ? defPrefix + "-" + name : name, _ref)
       const defPath = this.defsPath.childPath(defName)
 
-      this.defLinks.set(sourcePath + "#" + link, "#" + defPath.ref)
+      this.defLinks.set(_ref, "#" + defPath.ref)
 
       // resolve jsonSchema refs
       await this.crawl(jsonSchema, sourcePath, defName)
 
       // inject jsonSchema to root definitions
       setValueByPath(this.source, defPath.items, jsonSchema)
-      jsonSchema[external] = sourcePath + "#" + link
+      jsonSchema[external] = _ref
 
       return { $ref: "#" + defPath.ref, [external]: this.basePath }
     }
@@ -107,7 +109,7 @@ export class ApiRefBundler {
     return value
   }
 
-  private uniqueDefinitionName(name: string, i = 0): string {
+  private uniqueDefinitionName(name: string, ref: string, i = 0): string {
     if (!this.defs) {
       this.defs = getValueByPath(this.source, this.defsPath.items)
     }
@@ -115,7 +117,21 @@ export class ApiRefBundler {
     const _name = i ? name + i : name
     if (!this.defs || !this.defs[_name]) { return _name }
 
-    return this.uniqueDefinitionName(name, i+1)
+    // replace existing definition with ref to same name 
+    if (this.defs[_name]) {
+      const { $ref, ...rest } = this.defs[_name]
+      if ($ref) {
+        const [s = "",l = ""] = $ref.split("#")
+        const sourcePath = validURL(s) ? new URL(s).href : relativePath(s)
+        const _ref = `${sourcePath || ""}#${l}`
+        if ($ref && !Object.keys(rest).length && _ref === ref) {
+          delete this.defs[_name]
+          return _name
+        }
+      }
+    }
+
+    return this.uniqueDefinitionName(name, ref, i+1)
   }
 
   private async crawl(data: any, path: string = "", defPrefix: string = ""): Promise<any> {
