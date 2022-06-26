@@ -1,5 +1,4 @@
 import { filename, getValueByPath, isJsonSchema, mergeValues, relativePath, setValueByPath, validURL } from "./utils"
-import { PathPointer } from "./pointer"
 
 const external = Symbol("external")
 
@@ -17,13 +16,20 @@ export class ApiRefBundler {
   private basePath: string
   private source: any = {}
   public errors: any[] = []
-  private defsPath: PathPointer
+  private defsPath: string[]
   private defs?: any
 
   constructor(sourcePath: string, public resolver: Resolver, public options?: ApiRefBundlerOptions) {
     this.source = options?.source
     this.basePath = validURL(sourcePath) ? new URL(sourcePath).href : relativePath(sourcePath)
-    this.defsPath = PathPointer.fromPath(this.options?.definitionsBasePath || "/definitions")
+    let path = this.options?.definitionsBasePath || "definitions"
+    if (path[0] === "/") {
+      path = path.slice(1)
+    }
+    if (path[path.length-1] === "/") {
+      path = path.slice(0, -1)
+    }
+    this.defsPath = path.split("/")
   }
 
   public async run() {
@@ -90,18 +96,18 @@ export class ApiRefBundler {
       // generate new definition name
       const name = value.$id || filename(link || sourcePath)
       const defName = this.uniqueDefinitionName(!source && defPrefix ? defPrefix + "-" + name : name, _ref)
-      const defPath = this.defsPath.childPath(defName)
+      const defPath = [ ...this.defsPath, defName]
 
-      this.defLinks.set(_ref, "#" + defPath.ref)
+      this.defLinks.set(_ref, "#/" + defPath.join("/"))
 
       // resolve jsonSchema refs
       await this.crawl(jsonSchema, sourcePath, defName)
 
       // inject jsonSchema to root definitions
-      setValueByPath(this.source, defPath.items, jsonSchema)
+      setValueByPath(this.source, defPath, jsonSchema)
       jsonSchema[external] = _ref
 
-      return { $ref: "#" + defPath.ref, [external]: this.basePath }
+      return { $ref: "#/" + defPath.join("/"), [external]: this.basePath }
     }
 
     await this.crawl(value, sourcePath)
@@ -111,7 +117,7 @@ export class ApiRefBundler {
 
   private uniqueDefinitionName(name: string, ref: string, i = 0): string {
     if (!this.defs) {
-      this.defs = getValueByPath(this.source, this.defsPath.items)
+      this.defs = getValueByPath(this.source, this.defsPath)
     }
 
     const _name = i ? name + i : name

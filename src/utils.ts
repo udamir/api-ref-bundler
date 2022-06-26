@@ -1,5 +1,3 @@
-import { PathItem } from "./pointer"
-
 export const validURL = (str: any) => {
   var pattern = new RegExp('^(https?:\\/\\/)'+ // protocol
     '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
@@ -44,7 +42,7 @@ export const mergeValues = (value: any, patch: any) => {
   }
 }
 
-export const getValueByPath = (obj: any, path: PathItem[]) => {
+export const getValueByPath = (obj: any, path: string[]) => {
   let value = obj
   for (const key of path) {
     value = Array.isArray(value) ? value[+key] : value[key]
@@ -55,7 +53,7 @@ export const getValueByPath = (obj: any, path: PathItem[]) => {
   return value
 }
 
-export const setValueByPath = (obj: any, path: PathItem[], value: any, i = 0) => {
+export const setValueByPath = (obj: any, path: string[], value: any, i = 0) => {
   if (i >= path.length) { return }
   
   const key = path[i]
