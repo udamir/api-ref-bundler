@@ -1,6 +1,6 @@
-import { ApiRefBundler } from "./bundler"
+import { ApiRefBundler, ApiRefBundlerOptions, Resolver } from "./bundler"
 
 export * from "./bundler"
 export * from "./utils"
 
-export default ApiRefBundler
+export const create = (sourcePath: string, resolver: Resolver, options?: ApiRefBundlerOptions) => new ApiRefBundler(sourcePath, resolver, options)

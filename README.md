@@ -54,7 +54,7 @@ A browser version of `api-ref-bundler` is also available via CDN:
 Reference `api-ref-bundler.min.js` in your HTML and use the global variable `ApiRefBundler`.
 ```HTML
 <script>
-  var bundler = new ApiRefBundler.ApiRefBundler("http://example.com/schema", async (sourcePath) => {
+  var bundler = ApiRefBundler.create("http://example.com/schema", async (sourcePath) => {
     const data = await fetch(sourcePath)
     return data.json()
   })

@@ -12,7 +12,7 @@
   <textarea id="baz" title="baz" style="width: 24.5%; height: 99%;"></textarea>
   <textarea id="result" title="result" style="width: 25%; height: 99%;"></textarea>
   <script>
-    var bundler = new ApiRefBundler.ApiRefBundler("bar.json", async (sourcePath) => {
+    var bundler = ApiRefBundler.create("bar.json", async (sourcePath) => {
       const data = await fetch("/test/resources/" + sourcePath)
       return data.json()
     })
