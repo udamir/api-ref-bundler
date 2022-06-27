@@ -1,4 +1,4 @@
-import { filename, getValueByPath, isJsonSchema, mergeValues, relativePath, setValueByPath, validURL } from "./utils"
+import { buildPath, filename, getValueByPath, isJsonSchema, mergeValues, parsePath, relativePath, setValueByPath, validURL } from "./utils"
 
 const external = Symbol("external")
 
@@ -23,13 +23,13 @@ export class ApiRefBundler {
     this.source = options?.source
     this.basePath = validURL(sourcePath) ? new URL(sourcePath).href : relativePath(sourcePath)
     let path = this.options?.definitionsBasePath || "definitions"
-    if (path[0] === "/") {
-      path = path.slice(1)
+    if (path[0] !== "/") {
+      path = "/" + path
     }
     if (path[path.length-1] === "/") {
       path = path.slice(0, -1)
     }
-    this.defsPath = path.split("/")
+    this.defsPath = parsePath(path)
   }
 
   public async run() {
@@ -37,7 +37,9 @@ export class ApiRefBundler {
       this.source = await this.resolve(this.basePath)
     }
 
-    return this.crawl(this.source, this.basePath)
+    if (this.source) {
+      return this.crawl(this.source, this.basePath)
+    }
   }
 
   public async resolve(sourcePath: string): Promise<any> {
@@ -45,9 +47,14 @@ export class ApiRefBundler {
       return this.cache.get(sourcePath)
     } 
 
-    const value = await this.resolver(sourcePath)
-    this.cache.set(sourcePath, value)
-    return value
+    try {
+      const value = await this.resolver(sourcePath)
+      this.cache.set(sourcePath, value)
+      return value      
+    } catch (error) {
+      this.errors.push(`Cannot resolve ${sourcePath}!`)
+      return
+    }
   }
 
   public async bundle($ref: string, path: string, defPrefix?: string) {
@@ -57,7 +64,7 @@ export class ApiRefBundler {
 
     const link = !pointer || pointer === "/" ? "" : pointer
 
-    if (!source && !path && !defPrefix) { return { $ref: $ref }  }
+    if (!source && !path && !defPrefix) { return { $ref }  }
 
     // resolve source
     const sourcePath = validURL(source) ? new URL(source).href : relativePath(source, path)
@@ -83,7 +90,7 @@ export class ApiRefBundler {
     }
 
     // resolve $ref
-    const value = !link ? refSource : getValueByPath(refSource, link.split("/").slice(1))
+    const value = !link ? refSource : getValueByPath(refSource, parsePath(link))
 
     if (!value) {
       this.errors.push({ message: "Cannot resolve $ref path", ref: $ref, path })
@@ -98,7 +105,7 @@ export class ApiRefBundler {
       const defName = this.uniqueDefinitionName(!source && defPrefix ? defPrefix + "-" + name : name, _ref)
       const defPath = [ ...this.defsPath, defName]
 
-      this.defLinks.set(_ref, "#/" + defPath.join("/"))
+      this.defLinks.set(_ref, "#" + buildPath(defPath))
 
       // resolve jsonSchema refs
       await this.crawl(jsonSchema, sourcePath, defName)
@@ -107,7 +114,7 @@ export class ApiRefBundler {
       setValueByPath(this.source, defPath, jsonSchema)
       jsonSchema[external] = _ref
 
-      return { $ref: "#/" + defPath.join("/"), [external]: this.basePath }
+      return { $ref: "#" + buildPath(defPath), [external]: this.basePath }
     }
 
     await this.crawl(value, sourcePath)
@@ -141,8 +148,8 @@ export class ApiRefBundler {
   }
 
   private async crawl(data: any, path: string = "", defPrefix: string = ""): Promise<any> {
+    if (typeof data !== "object" || data === null) { return data }
     if (data[external]) { return data }
-    if (typeof data !== "object") { return data }
     if (Array.isArray(data)) {
       for (let i = 0; i < data.length; i++) {
         if (typeof data[i] !== "object") { continue }

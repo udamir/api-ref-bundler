@@ -29,6 +29,15 @@ export const isJsonSchema = (value: any): boolean => {
   return typeof value === "object" && ["object", "array", "string", "number", "boolean", "integer", "null"].includes(value.type)
 }
 
+export const parsePath = (path: string): string[] => {
+  const [_, ...pathArr] = path.split("/").map((i) => i.replace(new RegExp("~1", "g"), "/"))
+  return pathArr
+}
+
+export const buildPath = (path: string[]): string => {
+  return "/" + path.map((i) => String(i).replace(new RegExp("/", "g"), "~1")).join("/")
+}
+
 export const mergeValues = (value: any, patch: any) => {
   if (Array.isArray(value)) {
     return Array.isArray(patch) ? value.push(...patch) : value
