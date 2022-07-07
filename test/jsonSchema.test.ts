@@ -80,7 +80,7 @@ describe("Test jsonSchema ref bundle", () => {
           $ref: "#/definitions/baz-World"
         },
         new: {
-          $ref: "#/definitions/baz"
+          $ref: "#"
         }
       }
     })

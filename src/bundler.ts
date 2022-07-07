@@ -71,7 +71,7 @@ export class ApiRefBundler {
 
     // check if source equal to base file
     if (sourcePath === this.basePath) {
-      return { $ref: "#" + link } 
+      return { $ref: "#" + link, [external]: this.basePath } 
     } 
 
     const _ref = sourcePath + "#" + link
