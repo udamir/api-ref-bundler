@@ -9,9 +9,7 @@ const resolver = async (sourcePath: string) => {
 }
 
 const bundle = async (filename: string) => {
-  const refparser = new ApiRefBundler(filename, resolver, {
-    definitionsBasePath: "/definitions"
-  })
+  const refparser = new ApiRefBundler(filename, resolver)
   return refparser.run()
 }
 
@@ -72,12 +70,12 @@ describe("Test jsonSchema ref bundle", () => {
     const foo = await bundle("foo.json")
     expect(foo.properties.new).toMatchObject({ $ref: "#" })
     expect(foo.properties.baz).toMatchObject({ $ref: "#/definitions/baz" })
-    expect(foo.definitions["baz-World"]).toMatchObject({ type: "string" })
+    expect(foo.definitions["World"]).toMatchObject({ type: "string" })
     expect(foo.definitions["baz"]).toMatchObject({
       type: "object",
       properties: {
         hello: {
-          $ref: "#/definitions/baz-World"
+          $ref: "#/definitions/World"
         },
         new: {
           $ref: "#"

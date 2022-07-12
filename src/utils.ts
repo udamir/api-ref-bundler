@@ -8,6 +8,16 @@ export const validURL = (str: any) => {
   return !!pattern.test(str)
 }
 
+export type JsonType = "OpenApi3" | "OpenApi2" | "AsyncApi2" | "JsonSchema"
+
+export const calcJsonType = (data: any): JsonType => {
+  if (typeof data !== "object" || !data) { return "JsonSchema"}
+
+  if (/3.+/.test(data?.openapi || "")) return "OpenApi3"
+  if (/2.+/.test(data?.asyncapi || "")) return "AsyncApi2"
+  return "JsonSchema"
+}
+
 export const relativePath = (path: string, basePath?: string) => {
   if (!basePath) {
     return normalize(path)
