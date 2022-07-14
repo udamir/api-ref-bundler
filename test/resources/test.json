@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "properties": {
+    "hello": {
+      "type": "string"
+    },
+    "readme": {
+      "$ref": "readme.md"
+    }
+  }
+}

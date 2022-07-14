@@ -14,7 +14,7 @@
   <script>
     var bundler = ApiRefBundler.create("bar.json", async (sourcePath) => {
       const data = await fetch("/test/resources/" + sourcePath)
-      return data.json()
+      return sourcePath.slice(-3) === ".md" ? data.text() : data.json()
     })
 
     fetch("/test/resources/bar.json").then(async (data) => {

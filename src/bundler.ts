@@ -120,6 +120,11 @@ export class ApiRefBundler {
       if (!this.options?.ignoreBadSource) { return }
     }
 
+    // reference to text file
+    if (typeof refSource === "string") {
+      return refSource
+    }
+
     // resolve $ref
     const value = !link ? refSource : getValueByPath(refSource, parsePath(link))
 
@@ -196,11 +201,18 @@ export class ApiRefBundler {
 
       for (const key of Object.keys(rest)) {
         if (typeof rest[key] !== "object" || rest[key] === null) { continue }
-        await this.crawl(rest[key], path, defPrefix)
+        const value = await this.crawl(rest[key], path, defPrefix)
+        if (typeof value !== "object") {
+          data[key] = value
+        }
       }
 
       const refContent = await this.bundle($ref, path, defPrefix)
       if (refContent) {
+        if (typeof refContent === "string") {
+          return refContent
+        }
+        
         if ($ref && !refContent["$ref"]) {
           delete data["$ref"]
         }

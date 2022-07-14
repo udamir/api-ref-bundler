@@ -5,7 +5,7 @@ import { ApiRefBundler } from "../src"
 
 const resolver = async (sourcePath: string) => {
   const file = await fs.readFile(path.join(__dirname, "./resources/", sourcePath))
-  return JSON.parse(file.toString())      
+  return sourcePath.slice(-3) === ".md" ? file.toString() : JSON.parse(file.toString())      
 }
 
 const bundle = async (filename: string) => {
@@ -82,5 +82,10 @@ describe("Test jsonSchema ref bundle", () => {
         }
       }
     })
+  })
+
+  it("test.json should be bundled with md file", async () => {
+    const foo = await bundle("test.json")
+    expect(foo.properties.readme).toEqual("bundle all external refs in signle document")
   })
 })

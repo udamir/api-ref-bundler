@@ -13,6 +13,7 @@ This package provides utils to resolve all external references in Json based API
 ## Features
 - bundle all external refs in signle document
 - converts external references into internal
+- support external '.md' references
 - support for all kinds of circularity
 - no concept of resolvers - you are in charge of the whole reading & path parsing process
 - no parser included - bring your own!
@@ -32,8 +33,8 @@ import { promises as fs } from 'fs'
 import { bundle } from 'api-ref-bundler'
 
 const bundler = new ApiRefBundler("schema.json", async (sourcePath) => {
-  const schema = await fs.readFile(path.join(__dirname, "./", sourcePath), "utf8")
-  return JSON.parse(schema)      
+  const data = await fs.readFile(path.join(__dirname, "./", sourcePath), "utf8")
+  return sourcePath.slice(-3) === ".md" ? data : JSON.parse(data)      
 })
 
 bundler.run().then(schema => {
@@ -56,7 +57,7 @@ Reference `api-ref-bundler.min.js` in your HTML and use the global variable `Api
 <script>
   var bundler = ApiRefBundler.create("http://example.com/schema", async (sourcePath) => {
     const data = await fetch(sourcePath)
-    return data.json()
+    return sourcePath.slice(-3) === ".md" ? data.text() : data.json()
   })
 
   bundler.run().then(schema => {
