@@ -197,8 +197,6 @@ export class ApiRefBundler {
     } else {
       const { $ref, ...rest } = data
 
-      if (data[external]) { return data }
-
       for (const key of Object.keys(rest)) {
         if (typeof rest[key] !== "object" || rest[key] === null) { continue }
         const value = await this.crawl(rest[key], path, defPrefix)
