@@ -145,20 +145,18 @@ export class ApiRefBundler {
       this.defLinks.set(_ref, "#" + buildPath(defPath))
 
       // resolve jsonSchema refs
-      await this.crawl(jsonSchema, sourcePath, defName + "-")
+      const resolvedJsonSchema = await this.crawl(jsonSchema, sourcePath, defName + "-")
 
-      if (!jsonSchema[external]) {
+      if (!resolvedJsonSchema[external]) {
         // inject jsonSchema to root definitions
-        setValueByPath(this.source, defPath, jsonSchema)
-        jsonSchema[external] = _ref
+        setValueByPath(this.source, defPath, resolvedJsonSchema)
+        resolvedJsonSchema[external] = _ref
       }
 
       return { $ref: "#" + buildPath(defPath), [external]: this.basePath }
     }
 
-    await this.crawl(value, sourcePath)
-
-    return value
+    return this.crawl(value, sourcePath)
   }
 
   private uniqueDefinitionName(defPath: string[], name: string, ref: string, i = 0): string {
@@ -190,19 +188,18 @@ export class ApiRefBundler {
     if (typeof data !== "object" || data === null) { return data }
     if (data[external]) { return data }
     if (Array.isArray(data)) {
-      for (let i = 0; i < data.length; i++) {
-        if (typeof data[i] !== "object") { continue }
-        await this.crawl(data[i], path, defPrefix)
+      const result = [...data]
+      for (let i = 0; i < result.length; i++) {
+        if (typeof result[i] !== "object") { continue }
+        result[i] = await this.crawl(result[i], path, defPrefix)
       }
+      return result
     } else {
-      const { $ref, ...rest } = data
+      const { $ref, ...result } = data
 
-      for (const key of Object.keys(rest)) {
-        if (typeof rest[key] !== "object" || rest[key] === null) { continue }
-        const value = await this.crawl(rest[key], path, defPrefix)
-        if (typeof value !== "object") {
-          data[key] = value
-        }
+      for (const key of Object.keys(result)) {
+        if (typeof result[key] !== "object" || result[key] === null) { continue }
+        result[key] = await this.crawl(result[key], path, defPrefix)
       }
 
       const refContent = await this.bundle($ref, path, defPrefix)
@@ -211,12 +208,9 @@ export class ApiRefBundler {
           return refContent
         }
         
-        if ($ref && !refContent["$ref"]) {
-          delete data["$ref"]
-        }
-        mergeValues(data, mergeValues(refContent, rest))
+        return mergeValues(refContent, result)
       }
+      return $ref ? { ...result, $ref } : result
     }
-    return data
   }
 }

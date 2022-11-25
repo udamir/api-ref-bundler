@@ -14,6 +14,7 @@ export const calcJsonType = (data: any): JsonType => {
   if (typeof data !== "object" || !data) { return "JsonSchema"}
 
   if (/3.+/.test(data?.openapi || "")) return "OpenApi3"
+  if (/2.+/.test(data?.swagger || "")) return "OpenApi2"
   if (/2.+/.test(data?.asyncapi || "")) return "AsyncApi2"
   return "JsonSchema"
 }
@@ -36,7 +37,11 @@ export const filename = (str: string) => {
 }
 
 export const isJsonSchema = (value: any): boolean => {
-  return typeof value === "object" && ["object", "array", "string", "number", "boolean", "integer", "null"].includes(value.type)
+  return isBasicJsonSchema(value) || Array.isArray(value.anyOf) || Array.isArray(value.oneOf) || Array.isArray(value.allOf)
+}
+
+export const isBasicJsonSchema = (value: any): boolean => {
+  return typeof value === "object" && (["object", "array", "string", "number", "boolean", "integer", "null"].includes(value.type))
 }
 
 export const parsePath = (path: string): string[] => {
@@ -51,11 +56,12 @@ export const buildPath = (path: string[]): string => {
 export const mergeValues = (value: any, patch: any) => {
   if (Array.isArray(value)) {
     return Array.isArray(patch) ? value.push(...patch) : value
-  } else if (typeof value === "object" && typeof patch === "object" && patch !== null) {
+  } else if (typeof value === "object" && typeof patch === "object" && patch && value) {
+    const result = { ...value }
     for(const key of Reflect.ownKeys(patch)) {
-      value[key] = mergeValues(value[key], patch[key])
+      result[key] = mergeValues(result[key], patch[key])
     }
-    return value
+    return result
   } else {
     return patch
   }
