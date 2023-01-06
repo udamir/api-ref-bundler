@@ -10,12 +10,33 @@ export const validURL = (str: any) => {
 
 export type JsonType = "OpenApi3" | "OpenApi2" | "AsyncApi2" | "JsonSchema"
 
+export type ObjPath = (string | number)[]
+
 export const calcJsonType = (data: any): JsonType => {
   if (typeof data !== "object" || !data) { return "JsonSchema"}
 
   if (/3.+/.test(data?.openapi || "")) return "OpenApi3"
+  if (/2.+/.test(data?.swagger || "")) return "OpenApi2"
   if (/2.+/.test(data?.asyncapi || "")) return "AsyncApi2"
   return "JsonSchema"
+}
+
+export const parseRef = ($ref: string, basePath = "") => {
+  const [sourcePath = basePath, ref] = $ref.split("#")
+
+  const filePath = validURL(sourcePath) ? new URL(sourcePath).href : relativePath(sourcePath, basePath)
+  const pointer = !ref || ref === "/" ? "" : ref
+  const normalized = buildRef(filePath, pointer)
+  
+  return { filePath, pointer, normalized }
+}
+
+export const buildRef = (basePath?: string, pointer?: string) => {
+  if (!basePath) {
+    return !pointer ? "#" : `#${pointer}`
+  } else {
+    return `${basePath}${!pointer ? "" : "#" + pointer}`
+  }
 }
 
 export const relativePath = (path: string, basePath?: string) => {
@@ -36,7 +57,11 @@ export const filename = (str: string) => {
 }
 
 export const isJsonSchema = (value: any): boolean => {
-  return typeof value === "object" && ["object", "array", "string", "number", "boolean", "integer", "null"].includes(value.type)
+  return isBasicJsonSchema(value) || Array.isArray(value.anyOf) || Array.isArray(value.oneOf) || Array.isArray(value.allOf) || !!value["$ref"]
+}
+
+export const isBasicJsonSchema = (value: any): boolean => {
+  return typeof value === "object" && (["object", "array", "string", "number", "boolean", "integer", "null"].includes(value.type))
 }
 
 export const parsePath = (path: string): string[] => {
@@ -44,18 +69,19 @@ export const parsePath = (path: string): string[] => {
   return pathArr
 }
 
-export const buildPath = (path: string[]): string => {
-  return "/" + path.map((i) => String(i).replace(new RegExp("/", "g"), "~1")).join("/")
+export const buildPath = (path: ObjPath, prefix = ""): string => {
+  return prefix + "/" + path.map((i) => String(i).replace(new RegExp("/", "g"), "~1")).join("/")
 }
 
 export const mergeValues = (value: any, patch: any) => {
   if (Array.isArray(value)) {
-    return Array.isArray(patch) ? value.push(...patch) : value
-  } else if (typeof value === "object" && typeof patch === "object" && patch !== null) {
+    return Array.isArray(patch) ? [...value, ...patch] : [...value]
+  } else if (typeof value === "object" && typeof patch === "object" && patch && value) {
+    const result = { ...value }
     for(const key of Reflect.ownKeys(patch)) {
-      value[key] = mergeValues(value[key], patch[key])
+      result[key] = mergeValues(result[key], patch[key])
     }
-    return value
+    return result
   } else {
     return patch
   }
