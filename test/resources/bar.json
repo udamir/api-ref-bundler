@@ -5,7 +5,8 @@
       "$ref": "./xyz/baz.json#/definitions/World"
     },
     "new": {
-      "$ref": "./xyz/baz.json#/definitions/New"
+      "$ref": "./xyz/baz.json#/definitions/New",
+      "title": "bar"
     },
     "world": {
       "$ref": "#/definitions/World"

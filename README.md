@@ -13,6 +13,7 @@ This package provides utils to resolve all external references in Json based API
 ## Features
 - bundle all external refs in signle document
 - converts external references into internal
+- support full and partial dereference
 - support external '.md' references
 - support for all kinds of circularity
 - no concept of resolvers - you are in charge of the whole reading & path parsing process
@@ -30,18 +31,63 @@ npm install api-ref-bundler --save
 ### Nodejs
 ```ts
 import { promises as fs } from 'fs'
-import { bundle } from 'api-ref-bundler'
+import { bundle, dereference } from 'api-ref-bundler'
 
-const bundler = new ApiRefBundler("schema.json", async (sourcePath) => {
+const resolver = async (sourcePath) => {
   const data = await fs.readFile(path.join(__dirname, "./", sourcePath), "utf8")
   return sourcePath.slice(-3) === ".md" ? data : JSON.parse(data)      
-})
+}
 
-bundler.run().then(schema => {
+// bundle (convert all external refs to internal)
+bundle("schema.json", resolver, { ignoreSibling: true }).then(schema => {
   console.log(schema)
 }).catch(errors => {
   console.log(errors)
 })
+
+const onErrorHook = (msg: string) => {
+  throw new Error(msg)
+}
+
+// full dereference (remove all refs)
+dereference("schema.json", resolver, { hooks: { onError: onErrorHook }}).then(schema => {
+  console.log(schema)
+}).catch(errors => {
+  console.log(errors)
+})
+
+// partial dereference (remove all refs in path '/properties/foo')
+dereference("schema.json#/properties/foo", resolver).then(foo => {
+  console.log(foo)
+}).catch(errors => {
+  console.log(errors)
+})
+
+```
+
+#### Bundle options
+```ts
+interface BundleOptions {
+  ignoreSibling?: boolean
+  hooks?: {
+    onError: (message: string, ctx: CrawlContext<BundleParams>) => void
+    onRef: (ref: string, ctx: CrawlContext<BundleParams>) => void
+    onCrawl: (value: any, ctx: CrawlContext<BundleParams>) => void
+  }
+}
+```
+
+#### Dereference options
+```ts
+interface DereferenceOptions {
+  ignoreSibling?: boolean
+  hooks?: {
+    onError: (message: string, ctx: CrawlContext<DereferenceParams>) => void
+    onRef: (ref: string, ctx: CrawlContext<DereferenceParams>) => void
+    onCrawl: (value: any, ctx: CrawlContext<DereferenceParams>) => void
+    onCycle: (ref: string, ctx: CrawlContext<DereferenceParams>) => void
+  }
+}
 ```
 
 ### Browsers
@@ -55,12 +101,12 @@ A browser version of `api-ref-bundler` is also available via CDN:
 Reference `api-ref-bundler.min.js` in your HTML and use the global variable `ApiRefBundler`.
 ```HTML
 <script>
-  var bundler = ApiRefBundler.create("http://example.com/schema", async (sourcePath) => {
+  const resolver = async (sourcePath) => {
     const data = await fetch(sourcePath)
     return sourcePath.slice(-3) === ".md" ? data.text() : data.json()
-  })
+  }
 
-  bundler.run().then(schema => {
+  ApiRefBundler.bundle("http://example.com/schema", resolver).then(schema => {
     console.log(schema)
   }).catch(errors => {
     console.log(errors)

@@ -1,21 +1,16 @@
 import { promises as fs } from "fs"
 import path from "path"
 
-import { ApiRefBundler } from "../src"
+import { bundle } from "../src/bundle"
 
 const resolver = async (sourcePath: string) => {
   const file = await fs.readFile(path.join(__dirname, "./resources/", sourcePath))
   return sourcePath.slice(-3) === ".md" ? file.toString() : JSON.parse(file.toString())      
 }
 
-const bundle = async (filename: string) => {
-  const refparser = new ApiRefBundler(filename, resolver)
-  return refparser.run()
-}
-
 describe("Test jsonSchema ref bundle", () => {
   it("baz.json should be bundled", async () => {
-    const baz = await bundle("./xyz/baz.json")
+    const baz = await bundle("./xyz/baz.json", resolver)
     expect(baz.properties.new).toMatchObject({ $ref: "#/definitions/New" })
     expect(baz.definitions.New).toMatchObject({ $ref: "#/definitions/foo" })
     expect(baz.definitions["foo"]).toMatchObject({
@@ -35,18 +30,19 @@ describe("Test jsonSchema ref bundle", () => {
   })
 
   it("bar.json should be bundled", async () => {
-    const bar = await bundle("bar.json")
+    const bar = await bundle("bar.json", resolver)
     expect(bar.properties.hello).toMatchObject({ $ref: "#/definitions/World1" })
-    expect(bar.properties.new).toMatchObject({ $ref: "#/definitions/foo" })
+    expect(bar.properties.new).toMatchObject({ $ref: "#/definitions/New", title: "bar" })
     expect(bar.definitions.World1).toMatchObject({ type: "string" })
-    expect(bar.definitions["baz"]).toMatchObject({
+    expect(bar.definitions.baz).toMatchObject({
       type: "object",
+      title: "baz",
       properties: {
         hello: {
           $ref: "#/definitions/World1"
         },
         new: {
-          $ref: "#/definitions/foo"
+          $ref: "#/definitions/New"
         }
       }
     })
@@ -57,7 +53,7 @@ describe("Test jsonSchema ref bundle", () => {
           type: "string"
         },
         new: {
-          $ref: "#/definitions/foo"
+          $ref: "#/definitions/New"
         },
         baz: {
           $ref: "#/definitions/baz"
@@ -67,10 +63,11 @@ describe("Test jsonSchema ref bundle", () => {
   })
 
   it("foo.json should be bundled", async () => {
-    const foo = await bundle("foo.json")
-    expect(foo.properties.new).toMatchObject({ $ref: "#" })
+    const foo = await bundle("foo.json", resolver)
+    expect(foo.properties.new).toMatchObject({ $ref: "#/definitions/New" })
     expect(foo.properties.baz).toMatchObject({ $ref: "#/definitions/baz" })
     expect(foo.definitions["World"]).toMatchObject({ type: "string" })
+    expect(foo.definitions["New"]).toMatchObject({ $ref: "#", description: 'sibling description' })
     expect(foo.definitions["baz"]).toMatchObject({
       type: "object",
       properties: {
@@ -78,14 +75,14 @@ describe("Test jsonSchema ref bundle", () => {
           $ref: "#/definitions/World"
         },
         new: {
-          $ref: "#"
+          $ref: "#/definitions/New"
         }
       }
     })
   })
 
   it("test.json should be bundled with md file", async () => {
-    const foo = await bundle("test.json")
+    const foo = await bundle("test.json", resolver)
     expect(foo.properties.readme).toEqual("bundle all external refs in signle document")
   })
 })

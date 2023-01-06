@@ -1,5 +1,6 @@
 {
   "type": "object",
+  "title": "baz",
   "properties": {
     "hello": {
       "$ref": "#/definitions/World"
@@ -13,7 +14,8 @@
       "type": "string"
     },
     "New": {
-      "$ref": "../foo.json"
+      "$ref": "../foo.json",
+      "description": "sibling description"
     }
   }
 } 
