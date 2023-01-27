@@ -4,6 +4,7 @@ export const isObject = (value: any): value is Record<string | number | symbol, 
 
 export interface CrawlContext<T> {
   readonly root?: any
+  readonly node?: any
   readonly path: ObjPath
   readonly key: string | number
   readonly params: T
@@ -12,13 +13,15 @@ export interface CrawlContext<T> {
 export interface CrawlHookResponse<T> {
   value?: any,
   params?: T,
-  exitHook?: (v: any) => Promise<void> | void
+  exitHook?: () => Promise<void> | void
 }
 
 export type CrawlHook<T> = (value: any, ctx: CrawlContext<T>) => Promise<CrawlHookResponse<T> | null> | CrawlHookResponse<T> | null
 
 export const explore = async <T>(data: any, params: T, hook?: CrawlHook<T>) => {
-  const context: CrawlContext<T> = { path: [], key: "", params }
+  const root = { "#": data }
+
+  const context: CrawlContext<T> = { path: [], key: "#", params, root, node: root }
   const _hook: CrawlHook<T> = async (value, ctx) => {
     return hook ? await hook(value, ctx) : { value: value, params: ctx.params }
   }
@@ -26,48 +29,69 @@ export const explore = async <T>(data: any, params: T, hook?: CrawlHook<T>) => {
 }
 
 export const transform = async <T>(data: any, params: T, hook?: CrawlHook<T>) => {
-  const root: any = {}
-  const _ctx = { path: [], key: "", params, root }
+  const root = { "#": data }
 
-  let node = root
   const _hook: CrawlHook<T> = async (value, ctx) => {
-    const res = hook ? await hook(value, ctx) : { value, params: ctx.params }
+    if (!hook) {
+      return { value, params: ctx.params }
+    }
 
-    const _node = node
+    const res = await hook(value, ctx)
+
     if (isObject(res)) {
-      if (isObject(res.value)) {
-        node[ctx.key] = Array.isArray(res.value) ? [] : {}
-        node = node[ctx.key]
+      ctx.node[ctx.key] = res.value
+    } else {
+      if (Array.isArray(ctx.node) && typeof ctx.key === "number") {
+        ctx.node.splice(ctx.key, 1)
       } else {
-        node[ctx.key] = res.value
+        delete ctx.node[ctx.key]
       }
     }
 
-    const exitHook = () => {
-      node = _node
-      return res?.exitHook && res.exitHook(_node)
-    }
-
-    return { ...res, exitHook }
+    return res
   }
 
-  await crawl(data, _ctx, _hook)
+  await crawl(data, { path: [], key: "#", params, root, node: root }, _hook)
 
-  return _ctx.root[""]
+  return root["#"]
 }
 
-export const crawl = async <T>(data: any, ctx: CrawlContext<T>, hook: CrawlHook<T>) =>{
+export const clone = async <T>(data: any, params: T, hook?: CrawlHook<T>) => {
+  const root: any = {}
+
+  const _hook: CrawlHook<T> = async (value, ctx) => {
+    const res = hook ? await hook(value, ctx) : { value, params: ctx.params }
+
+    if (isObject(res)) {
+      ctx.node[ctx.key] = isObject(res.value) ? (Array.isArray(res.value) ? [] : {}) : res.value
+    }
+    return res
+  }
+
+  await crawl(data, { path: [], key: "#", params, root, node: root }, _hook)
+
+  return root["#"]
+}
+
+export const crawl = async <T>(data: any, ctx: CrawlContext<T>, hook: CrawlHook<T>) => {
   const { value, params = ctx.params, exitHook } = await hook(data, ctx) || {}
+  const node = ctx.node[ctx.key]
+  // const promises = []
+
   if (Array.isArray(value)) {
     for (let i = 0; i < value.length; i++) {
-      const _ctx = { ...ctx, params, path: [...ctx.path, i], key: i }
+      const _ctx = { ...ctx, params, path: [...ctx.path, i], key: i, node }
+      // promises.push(crawl(value[i], _ctx, hook))
       await crawl(value[i], _ctx, hook)
     }
   } else if (isObject(value)) {
     for (const key of Object.keys(value)) {
-      const _ctx = { ...ctx, params, path: [...ctx.path, key], key }
+      const _ctx = { ...ctx, params, path: [...ctx.path, key], key, node }
+      // promises.push(crawl(value[key], _ctx, hook))
       await crawl(value[key], _ctx, hook)
     }
   }
-  exitHook && await exitHook(value)
+  
+  // await Promise.all(promises)
+  exitHook && await exitHook()
 }
