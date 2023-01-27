@@ -1,3 +1,22 @@
+const pathMask = {
+  slash: /\//g,
+  tilde: /~/g,
+  escapedSlash: /~1/g,
+  escapedTilde: /~0/g
+}
+
+export class MapArray<K, V> extends Map<K, Array<V>> {
+  public add(key: K, value: V): this {
+    const arr = this.get(key)
+    if (arr) {
+      arr.push(value)
+    } else {
+      this.set(key, [value])
+    }
+    return this
+  }
+}
+
 export const validURL = (str: any) => {
   var pattern = new RegExp('^(https?:\\/\\/)'+ // protocol
     '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
@@ -8,17 +27,18 @@ export const validURL = (str: any) => {
   return !!pattern.test(str)
 }
 
-export type JsonType = "OpenApi3" | "OpenApi2" | "AsyncApi2" | "JsonSchema"
+export type JsonType = "OpenApi3" | "OpenApi2" | "AsyncApi2" | "JsonSchema" | "unknown"
 
 export type ObjPath = (string | number)[]
 
 export const calcJsonType = (data: any): JsonType => {
-  if (typeof data !== "object" || !data) { return "JsonSchema"}
+  if (typeof data !== "object" || !data) { return "unknown" }
 
   if (/3.+/.test(data?.openapi || "")) return "OpenApi3"
   if (/2.+/.test(data?.swagger || "")) return "OpenApi2"
   if (/2.+/.test(data?.asyncapi || "")) return "AsyncApi2"
-  return "JsonSchema"
+  if (isJsonSchema(data)) return "JsonSchema"
+  return "unknown"
 }
 
 export const parseRef = ($ref: string, basePath = "") => {
@@ -26,12 +46,12 @@ export const parseRef = ($ref: string, basePath = "") => {
 
   const filePath = validURL(sourcePath) ? new URL(sourcePath).href : relativePath(sourcePath, basePath)
   const pointer = !ref || ref === "/" ? "" : ref
-  const normalized = buildRef(filePath, pointer)
+  const normalized = createRef(filePath, pointer)
   
   return { filePath, pointer, normalized }
 }
 
-export const buildRef = (basePath?: string, pointer?: string) => {
+export const createRef = (basePath?: string, pointer?: string): string => {
   if (!basePath) {
     return !pointer ? "#" : `#${pointer}`
   } else {
@@ -57,20 +77,25 @@ export const filename = (str: string) => {
 }
 
 export const isJsonSchema = (value: any): boolean => {
-  return isBasicJsonSchema(value) || Array.isArray(value.anyOf) || Array.isArray(value.oneOf) || Array.isArray(value.allOf) || !!value["$ref"]
+  return isBasicJsonSchema(value) || Array.isArray(value.anyOf) || Array.isArray(value.oneOf) || Array.isArray(value.allOf)
 }
 
 export const isBasicJsonSchema = (value: any): boolean => {
-  return typeof value === "object" && (["object", "array", "string", "number", "boolean", "integer", "null"].includes(value.type))
+  return typeof value === "object" && ("type" in value || "definitions" in value || "properties" in value)
 }
 
-export const parsePath = (path: string): string[] => {
-  const [_, ...pathArr] = path.split("/").map((i) => i.replace(new RegExp("~1", "g"), "/"))
-  return pathArr
+export const parsePointer = (pointer: string): string[] => {
+  return pointer.split("/").map((i) => decodeURIComponent(i.replace(pathMask.escapedSlash, "/").replace(pathMask.escapedTilde, "~"))).slice(1)
 }
 
-export const buildPath = (path: ObjPath, prefix = ""): string => {
-  return prefix + "/" + path.map((i) => String(i).replace(new RegExp("/", "g"), "~1")).join("/")
+export const buildRef = (path: ObjPath, fileName = ""): string => {
+  if (!path.length) { return fileName || "#" }
+  return fileName + "#" + buildPointer(path)
+}
+
+export const buildPointer = (path: ObjPath): string => {
+  if (!path.length) { return "" }
+  return "/" + path.map((i) => encodeURIComponent((String(i).replace(pathMask.tilde, "~0").replace(pathMask.slash, "~1")))).join("/")
 }
 
 export const mergeValues = (value: any, patch: any) => {
@@ -87,7 +112,7 @@ export const mergeValues = (value: any, patch: any) => {
   }
 }
 
-export const getValueByPath = (obj: any, path: string[]) => {
+export const getValueByPath = (obj: any, path: ObjPath) => {
   let value = obj
   for (const key of path) {
     value = Array.isArray(value) ? value[+key] : value[key]
@@ -98,7 +123,7 @@ export const getValueByPath = (obj: any, path: string[]) => {
   return value
 }
 
-export const setValueByPath = (obj: any, path: string[], value: any, i = 0) => {
+export const setValueByPath = (obj: any, path: ObjPath, value: any, i = 0) => {
   if (i >= path.length) { return }
   
   const key = path[i]

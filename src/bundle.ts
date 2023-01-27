@@ -1,8 +1,8 @@
 import { 
-  buildPath, buildRef, calcJsonType, filename, getValueByPath, isJsonSchema,
+  buildPointer, createRef, calcJsonType, filename, getValueByPath, isJsonSchema,
   JsonType, mergeValues, normalize, parseRef, setValueByPath,
 } from "./utils"
-import { CrawlContext, CrawlHook, isObject, transform } from "./crawler"
+import { clone, CrawlContext, CrawlHook, isObject } from "./crawler"
 import { RefResolver, Resolver } from "./resolver"
 import { DereferenceParams } from "./dereference"
 
@@ -22,8 +22,8 @@ interface BundleOptions {
 export const bundle = async (basePath: string, resolver: Resolver, options?: BundleOptions) => {
   const refResolver = new RefResolver(basePath, resolver)
 
-  basePath = buildRef(normalize(basePath))
-  const bundleParams: BundleParams = { refs: [ { ref: basePath, pointer: "#" }], basePath, path: ["#"] }
+  basePath = createRef(normalize(basePath))
+  const bundleParams: BundleParams = { refs: [ { ref: basePath, pointer: "" }], basePath, path: [] }
   const base = await refResolver.base()
   const apiType: JsonType = calcJsonType(base)
   const defLinks = new Map<string, string>()
@@ -34,12 +34,14 @@ export const bundle = async (basePath: string, resolver: Resolver, options?: Bun
     options?.hooks?.onCrawl(value, ctx)
 
     const { params, path, key } = ctx
-    const currentPath = buildPath([ ...params.path, ...path ], "")
+    const currentPointer = buildPointer([ ...params.path, ...path ])
+
+    // console.debug(params.basePath, currentPointer)
 
     // if current definition is alrady added to definitions then skip
-    if (newDefs.has(currentPath)) {
-      if (newDefs.get(currentPath)) { return null }
-      newDefs.set(currentPath, true)
+    if (newDefs.has(currentPointer)) {
+      if (newDefs.get(currentPointer)) { return null }
+      newDefs.set(currentPointer, true)
     }
     
     if (!isObject(value) || !value.hasOwnProperty("$ref")) {
@@ -53,83 +55,102 @@ export const bundle = async (basePath: string, resolver: Resolver, options?: Bun
 
     if (filePath === basePath) {
       // resolve internal reference
-      return { value: { $ref: buildRef("", pointer), ...rest }, params }
-    } else {
+      return { value: { $ref: createRef("", pointer), ...rest }, params }
+    } else if (defLinks.has(normalized)) {
       // check if ref already added to root definitions
-      if (defLinks.has(normalized)) {
-        return { value: { $ref: defLinks.get(normalized) }, params }
-      }
-
+      return { value: { $ref: defLinks.get(normalized), ...rest }, params }
+    } else if (defLinks.has(filePath) && !/\/(definitions|defs)/g.test(pointer)) {
+      // check if filepath already added to root definitions
+      return { value: { $ref: defLinks.get(filePath) + pointer, ...rest }, params }
+    } else {
       // resolve source
-      const _value = await refResolver.resolveRef(pointer, filePath)
+      const resolvedPointer = await refResolver.resolvePointer(pointer, filePath)
 
-      if (!_value) {
+      if (!resolvedPointer.value) {
         options?.hooks?.onError(`Cannot resolve: ${normalized}`, ctx)
 
         return { value: { $ref: normalized }, params }
       }
 
       // reference to text file
-      if (typeof _value === "string") {
-        return { value: _value, params }
+      if (typeof resolvedPointer.value === "string") {
+        return { value: resolvedPointer.value, params }
       }
 
-      const defPath = getDefinitionPath(apiType, pointer, _value)
+      const defPath = getDefinitionPath(apiType, pointer, resolvedPointer.value)
       if (defPath) {
-        const { $defs, definitions, ...jsonSchema } = _value
+        const { $defs, definitions, ...jsonSchema } = resolvedPointer.value
 
-        // generate new definition name
-        const name = _value.$id || _value.id || filename(pointer || filePath)
-        const defs = { ...getValueByPath(base, defPath), ...getValueByPath(rootDefs, defPath) }
-        const defName = uniqueDefinitionName(defs, !filePath ? name : name, normalized)
+
+        const pathDefs = getValueByPath(rootDefs, defPath) || {}
+
+        // try to find definition in new definitions
+        let defName = pathDefs && findDefinitionName(pathDefs, normalized, basePath)
+        if (!defName) {
+          const resolvedDefs = await refResolver.resolvePointerRef(buildPointer(defPath), basePath)
+          // try to find definition in root definitions
+          defName = findDefinitionName(resolvedDefs.value || {}, normalized, resolvedDefs.filePath)
+          if (!defName) {
+            // generate new definition name
+            const name = jsonSchema.$id || jsonSchema.id || filename(pointer || resolvedPointer.filePath)
+            defName = uniqueDefinitionName({ ...resolvedDefs.value, ...pathDefs }, name)
+          }
+        }
         defPath.push(defName)
-        const defPointer = buildPath(defPath, "#")
+        const defPointer = buildPointer(defPath)
 
-        defLinks.set(normalized, defPointer)
+        defLinks.set(normalized, "#" + defPointer)
         newDefs.set(defPointer, false)
 
         const _ref = { 
-          ref: buildRef(filePath, pointer),
+          ref: createRef(filePath, pointer),
           pointer: defPointer
         }
 
         const _params: BundleParams = { 
-          basePath: filePath,
+          basePath: resolvedPointer.filePath,
           path: defPath,
           refs: [ ...params.refs, _ref ],
           defPrefix: defName + "-"
         }
 
-        const _data = await transform(jsonSchema, _params, hook)
-        setValueByPath(rootDefs, defPath, _data)
-
-        return { value: { $ref: defPointer, ...rest }, params }
+        const _data = await clone(jsonSchema, _params, hook)
+        if (isObject(_data)) {
+          setValueByPath(rootDefs, defPath, _data)
+          if (defPointer === currentPointer) {
+            return null
+          }
+  
+          return { value: { $ref: "#" + defPointer, ...rest }, params }
+        }
       }
 
-      const exitHook = async (node: any) => {
+      defLinks.set(normalized, "#" + currentPointer)
+      
+      const exitHook = async () => {
         const _path = [ ...params.path, ...path ]
 
         const _ref = { 
-          ref: buildRef(filePath, pointer),
-          pointer: buildPath(_path, "")
+          ref: createRef(filePath, pointer),
+          pointer: buildPointer(_path)
         }
         
         const _params: BundleParams = {
           refs: [ ...params.refs, _ref ],
-          basePath: filePath,
+          basePath: resolvedPointer.filePath,
           path: _path
         }
 
-        const data = await transform(_value, _params, hook)
+        const data = await clone(resolvedPointer.value, _params, hook)
 
-        node[key] = options?.ignoreSibling ? data : mergeValues(data, node[key])
+        ctx.node[key] = (!isObject(data) || options?.ignoreSibling) ? data : mergeValues(data, ctx.node[key])
       }
        
       return { value: options?.ignoreSibling ? {} : rest, params, exitHook }
     }
   }
 
-  const result = await transform(base, bundleParams, hook)
+  const result = await clone(base, bundleParams, hook)
 
   return mergeValues(result, rootDefs)
 }
@@ -140,38 +161,39 @@ const getDefinitionPath = (apiType: JsonType, ref: string, value: any): string[]
       if (/^\/components\/(schemas|responses|parameters|examples|requestBodies|headers|securitySchemes|links|callbacks)\/+/.test(ref)) {
         return ref.split("/").slice(1, 3)
       } else {
-        return isJsonSchema(value) ? ["components", "schemas"] : undefined
+        return isJsonSchema(value) || value.$ref ? ["components", "schemas"] : undefined
       }
     case "OpenApi2":
       if (/^\/(definitions|parameters|responses|securityDefinitions)/.test(ref)) {
         return ref.split("/").slice(1, 2)
       } else {
-        return isJsonSchema(value) ? ["definitions"] : undefined
+        return isJsonSchema(value) || value.$ref ? ["definitions"] : undefined
       }
     case "AsyncApi2":
       if (/^\/components\/(schemas|servers|serverVariables|channels|messages|securitySchemes|parameters|correlationIds|operationTraits|messageTraits|serverBindings|channelBindings|operationBindings|messageBindings)\/+/.test(ref)) {
         return ref.split("/").slice(1, 3)
       } else {
-        return isJsonSchema(value) ? ["components", "schemas"] : undefined
+        return isJsonSchema(value) || value.$ref ? ["components", "schemas"] : undefined
       }
     case "JsonSchema":
-      return isJsonSchema(value) ? ["definitions"] : undefined
+      return isJsonSchema(value) || value.$ref ? ["definitions"] : undefined
     default:
       return
   }
 }
 
-const uniqueDefinitionName = (defs: any, name: string, ref: string, i = 0): string => {
+const uniqueDefinitionName = (defs: any, name: string, i = 0): string => {
   const _name = i ? name + i : name
   if (!defs || !defs[_name]) { return _name }
 
-  // replace existing definition with ref to same name
-  if (defs[_name]) {
-    const { $ref, ...rest } = defs[_name]
-    if ($ref && !Object.keys(rest).length && ref === parseRef($ref).normalized) {
-      return _name
-    }
-  }
+  return uniqueDefinitionName(defs, name, i + 1)
+}
 
-  return uniqueDefinitionName(defs, name, ref, i + 1)
+const findDefinitionName = (defs: any, ref: string, basePath: string) => {
+  for (const key of Object.keys(defs)) {
+    const def = defs[key]
+    if (!def.$ref || Object.keys(def).length > 1 ) { continue }
+    if (ref === parseRef(def.$ref, basePath).normalized) { return key }
+  }
+  return 
 }

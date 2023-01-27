@@ -1,0 +1,9 @@
+definitions:
+  parent:
+    $ref: definitions/parent-with-children.yaml
+
+  child:
+    $ref: definitions/child-with-parents.yaml
+
+  pet:
+    $ref: definitions/pet.yaml

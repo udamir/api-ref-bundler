@@ -81,6 +81,7 @@ interface BundleOptions {
 ```ts
 interface DereferenceOptions {
   ignoreSibling?: boolean
+  enableCircular?: boolean
   hooks?: {
     onError: (message: string, ctx: CrawlContext<DereferenceParams>) => void
     onRef: (ref: string, ctx: CrawlContext<DereferenceParams>) => void
