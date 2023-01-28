@@ -6,16 +6,18 @@ import { clone, CrawlContext, CrawlHook, isObject } from "./crawler"
 import { RefResolver, Resolver } from "./resolver"
 import { DereferenceParams } from "./dereference"
 
-interface BundleParams extends DereferenceParams {
+export interface BundleParams extends DereferenceParams {
   defPrefix?: string
 }
 
-interface BundleOptions {
+export type BundleContext = CrawlContext<BundleParams>
+
+export interface BundleOptions {
   ignoreSibling?: boolean
   hooks?: {
-    onError?: (message: string, ctx: CrawlContext<BundleParams>) => void
-    onRef?: (ref: string, ctx: CrawlContext<BundleParams>) => void
-    onCrawl?: (value: any, ctx: CrawlContext<BundleParams>) => void
+    onError?: (message: string, ctx: BundleContext) => void
+    onRef?: (ref: string, ctx: BundleContext) => void
+    onCrawl?: (value: any, ctx: BundleContext) => void
   }
 }
 

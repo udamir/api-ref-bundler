@@ -20,14 +20,16 @@ export interface DereferenceParams {
   path: ObjPath       // path in current file
 }
 
-interface DereferenceOptions {
+export type DereferenceContext = CrawlContext<DereferenceParams>
+
+export interface DereferenceOptions {
   ignoreSibling?: boolean
   enableCircular?: boolean
   hooks?: {
-    onError?: (message: string, ctx: CrawlContext<DereferenceParams>) => void
-    onRef?: (ref: string, ctx: CrawlContext<DereferenceParams>) => void
-    onCrawl?: (value: any, ctx: CrawlContext<DereferenceParams>) => void
-    onCycle?: (ref: string, ctx: CrawlContext<DereferenceParams>) => void
+    onError?: (message: string, ctx: DereferenceContext) => void
+    onRef?: (ref: string, ctx: DereferenceContext) => void
+    onCrawl?: (value: any, ctx: DereferenceContext) => void
+    onCycle?: (ref: string, ctx: DereferenceContext) => void
   }
 }
 
@@ -59,8 +61,6 @@ export const dereference = async (basePath: string, resolver: Resolver, options:
   const cycleNodes = new MapArray<string, ObjPath>()
 
   const hook: CrawlHook<DereferenceParams> = async (value, ctx) => {
-    hooks?.onCrawl && hooks.onCrawl(value, ctx)
-    
     const { params, path, key } = ctx
 
     // console.debug(params.basePath, buildPointer([...params.path, ...ctx.path]))
@@ -99,6 +99,7 @@ export const dereference = async (basePath: string, resolver: Resolver, options:
     }
 
     if (!isObject(value) || !value.hasOwnProperty("$ref")) {
+      hooks?.onCrawl && hooks.onCrawl(value, ctx)
       return { value, params, exitHook }
     }
 
@@ -116,12 +117,15 @@ export const dereference = async (basePath: string, resolver: Resolver, options:
 
     if (refNode) {
       hooks?.onCycle && hooks.onCycle(refNode.pointer, ctx)
+      let value
       if (enableCircular) {
         cycleNodes.add(refNode.pointer, [ ...params.path, ...ctx.path ])
-        return { value: (ignoreSibling || refNode.sibling) ? null : sibling, params }
+        value = (ignoreSibling || refNode.sibling) ? null : sibling
       } else {
-        return { value: { $ref: "#" + refNode.pointer, ...(ignoreSibling || refNode.sibling) ? {} : sibling }, params }
+        value = { $ref: "#" + refNode.pointer, ...(ignoreSibling || refNode.sibling) ? {} : sibling }
       }
+      hooks?.onCrawl && hooks.onCrawl(value, ctx)
+      return { value, params }
     }
 
     // resolve reference on Exit and merge with sibling
@@ -147,12 +151,17 @@ export const dereference = async (basePath: string, resolver: Resolver, options:
           basePath: resolvedPointer.filePath,
           path: [ ...params.path, ...path ]
         }
-  
+        
+        if (hooks?.onCrawl) {
+          const value = (!isObject(resolvedPointer.value) || ignoreSibling) ? resolvedPointer.value : mergeValues(resolvedPointer.value, ctx.node[key])
+          hooks.onCrawl(value, ctx)
+        }
+
         // dereference resolved value and save to cache
         data = await clone(resolvedPointer.value, _params, hook)
         cache.set(normalized, data)
       }
-      ctx.node[key] = (!isObject(data) || ignoreSibling) ? data : mergeValues(data, ctx.node[key])  
+      ctx.node[key] = (!isObject(data) || ignoreSibling) ? data : mergeValues(data, ctx.node[key])
 
       enableCircular && circularHook()
     }
