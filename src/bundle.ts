@@ -13,13 +13,13 @@ interface BundleParams extends DereferenceParams {
 interface BundleOptions {
   ignoreSibling?: boolean
   hooks?: {
-    onError: (message: string, ctx: CrawlContext<BundleParams>) => void
-    onRef: (ref: string, ctx: CrawlContext<BundleParams>) => void
-    onCrawl: (value: any, ctx: CrawlContext<BundleParams>) => void
+    onError?: (message: string, ctx: CrawlContext<BundleParams>) => void
+    onRef?: (ref: string, ctx: CrawlContext<BundleParams>) => void
+    onCrawl?: (value: any, ctx: CrawlContext<BundleParams>) => void
   }
 }
 
-export const bundle = async (basePath: string, resolver: Resolver, options?: BundleOptions) => {
+export const bundle = async (basePath: string, resolver: Resolver, options: BundleOptions = {}) => {
   const refResolver = new RefResolver(basePath, resolver)
 
   basePath = createRef(normalize(basePath))
@@ -29,9 +29,10 @@ export const bundle = async (basePath: string, resolver: Resolver, options?: Bun
   const defLinks = new Map<string, string>()
   const newDefs = new Map<string, boolean>()
   const rootDefs: any = {}
+  const { hooks, ignoreSibling } = options
 
   const hook: CrawlHook<BundleParams> = async (value, ctx) => {
-    options?.hooks?.onCrawl(value, ctx)
+    hooks?.onCrawl && hooks?.onCrawl(value, ctx)
 
     const { params, path, key } = ctx
     const currentPointer = buildPointer([ ...params.path, ...path ])
@@ -51,7 +52,7 @@ export const bundle = async (basePath: string, resolver: Resolver, options?: Bun
     const { $ref, ...rest } = value
     const { filePath, pointer, normalized } = parseRef($ref, params.basePath)
 
-    options?.hooks?.onRef(normalized, ctx)
+    hooks?.onRef && hooks.onRef(normalized, ctx)
 
     if (filePath === basePath) {
       // resolve internal reference
@@ -67,7 +68,7 @@ export const bundle = async (basePath: string, resolver: Resolver, options?: Bun
       const resolvedPointer = await refResolver.resolvePointer(pointer, filePath)
 
       if (!resolvedPointer.value) {
-        options?.hooks?.onError(`Cannot resolve: ${normalized}`, ctx)
+        hooks?.onError && hooks.onError(`Cannot resolve: ${normalized}`, ctx)
 
         return { value: { $ref: normalized }, params }
       }
@@ -143,10 +144,10 @@ export const bundle = async (basePath: string, resolver: Resolver, options?: Bun
 
         const data = await clone(resolvedPointer.value, _params, hook)
 
-        ctx.node[key] = (!isObject(data) || options?.ignoreSibling) ? data : mergeValues(data, ctx.node[key])
+        ctx.node[key] = (!isObject(data) || ignoreSibling) ? data : mergeValues(data, ctx.node[key])
       }
        
-      return { value: options?.ignoreSibling ? {} : rest, params, exitHook }
+      return { value: ignoreSibling ? {} : rest, params, exitHook }
     }
   }
 

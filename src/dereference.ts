@@ -24,10 +24,10 @@ interface DereferenceOptions {
   ignoreSibling?: boolean
   enableCircular?: boolean
   hooks?: {
-    onError: (message: string, ctx: CrawlContext<DereferenceParams>) => void
-    onRef: (ref: string, ctx: CrawlContext<DereferenceParams>) => void
-    onCrawl: (value: any, ctx: CrawlContext<DereferenceParams>) => void
-    onCycle: (ref: string, ctx: CrawlContext<DereferenceParams>) => void
+    onError?: (message: string, ctx: CrawlContext<DereferenceParams>) => void
+    onRef?: (ref: string, ctx: CrawlContext<DereferenceParams>) => void
+    onCrawl?: (value: any, ctx: CrawlContext<DereferenceParams>) => void
+    onCycle?: (ref: string, ctx: CrawlContext<DereferenceParams>) => void
   }
 }
 
@@ -59,7 +59,7 @@ export const dereference = async (basePath: string, resolver: Resolver, options:
   const cycleNodes = new MapArray<string, ObjPath>()
 
   const hook: CrawlHook<DereferenceParams> = async (value, ctx) => {
-    hooks?.onCrawl(value, ctx)
+    hooks?.onCrawl && hooks.onCrawl(value, ctx)
     
     const { params, path, key } = ctx
 
@@ -105,7 +105,7 @@ export const dereference = async (basePath: string, resolver: Resolver, options:
     const { $ref, ...sibling } = value
     const { filePath, pointer, normalized } = parseRef($ref, params.basePath)
 
-    hooks?.onRef(normalized, ctx)
+    hooks?.onRef && hooks.onRef(normalized, ctx)
 
     // check if current $ref was in parent nodes
     const refNode = params.refNodes.find((node, i, refNodes) => {
@@ -115,7 +115,7 @@ export const dereference = async (basePath: string, resolver: Resolver, options:
     })
 
     if (refNode) {
-      hooks?.onCycle(refNode.pointer, ctx)
+      hooks?.onCycle && hooks.onCycle(refNode.pointer, ctx)
       if (enableCircular) {
         cycleNodes.add(refNode.pointer, [ ...params.path, ...ctx.path ])
         return { value: (ignoreSibling || refNode.sibling) ? null : sibling, params }
@@ -133,7 +133,7 @@ export const dereference = async (basePath: string, resolver: Resolver, options:
         const resolvedPointer = await refResolver.resolvePointer(pointer, filePath)
 
         if (!resolvedPointer.value) {
-          hooks?.onError(`Cannot resolve: ${normalized}`, ctx)
+          hooks?.onError && hooks.onError(`Cannot resolve: ${normalized}`, ctx)
           ctx.node[key] = { $ref: normalized, ...ctx.node[key] }
           return 
         }
