@@ -3,17 +3,17 @@ import { ObjPath } from "./utils"
 export const isObject = (value: any): value is Record<string | number | symbol, any> => typeof value === "object" && value !== null
 
 export interface CrawlContext<T> {
-  readonly root?: any
-  readonly node?: any
-  readonly path: ObjPath
-  readonly key: string | number
-  readonly params: T
+  readonly root?: any             // root node
+  readonly node?: any             // current node
+  readonly path: ObjPath          // path to current node
+  readonly key: string | number   // current node key
+  readonly params: T              // custom context parameters
 }
 
 export interface CrawlHookResponse<T> {
-  value?: any,
-  params?: T,
-  exitHook?: () => Promise<void> | void
+  value?: any,                            // updated value for current node 
+  params?: T,                             // updated params
+  exitHook?: () => Promise<void> | void   // on exit from current node
 }
 
 export type CrawlHook<T> = (value: any, ctx: CrawlContext<T>) => Promise<CrawlHookResponse<T> | null> | CrawlHookResponse<T> | null

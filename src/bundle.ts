@@ -23,7 +23,7 @@ export const bundle = async (basePath: string, resolver: Resolver, options?: Bun
   const refResolver = new RefResolver(basePath, resolver)
 
   basePath = createRef(normalize(basePath))
-  const bundleParams: BundleParams = { refs: [ { ref: basePath, pointer: "" }], basePath, path: [] }
+  const bundleParams: BundleParams = { refNodes: [ { ref: basePath, pointer: "" }], basePath, path: [] }
   const base = await refResolver.base()
   const apiType: JsonType = calcJsonType(base)
   const defLinks = new Map<string, string>()
@@ -110,7 +110,7 @@ export const bundle = async (basePath: string, resolver: Resolver, options?: Bun
         const _params: BundleParams = { 
           basePath: resolvedPointer.filePath,
           path: defPath,
-          refs: [ ...params.refs, _ref ],
+          refNodes: [ ...params.refNodes, _ref ],
           defPrefix: defName + "-"
         }
 
@@ -136,7 +136,7 @@ export const bundle = async (basePath: string, resolver: Resolver, options?: Bun
         }
         
         const _params: BundleParams = {
-          refs: [ ...params.refs, _ref ],
+          refNodes: [ ...params.refNodes, _ref ],
           basePath: resolvedPointer.filePath,
           path: _path
         }

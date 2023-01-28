@@ -9,6 +9,15 @@ const self: any = {
   }
 }
 
+const selfCycled: any = {
+  definitions: {
+    thing: {
+      title: "thing",
+      description: "This JSON Reference has additional properties (other than $ref). Normally, this creates a new type that extends the referenced type, but since this reference points to ITSELF, it doesn't do that.\n",
+    }
+  }
+}
+
 const pet = {
   title: "pet",
   type: "object",
@@ -210,22 +219,4 @@ const indirectAncestor: any = {
   }
 }
 
-
-
-
-// ancestor.fullyDereferenced.definitions.person.properties.spouse.properties =
-//   ancestor.fullyDereferenced.definitions.person.properties;
-
-// indirect.fullyDereferenced.definitions.parent.properties.children.items.properties =
-//   indirect.fullyDereferenced.definitions.child.properties;
-
-// indirect.fullyDereferenced.definitions.child.properties.parents.items.properties =
-//   indirect.fullyDereferenced.definitions.parent.properties;
-
-// indirectAncestor.fullyDereferenced.definitions.parent.properties.child.properties =
-//   indirectAncestor.fullyDereferenced.definitions.child.properties;
-
-// indirectAncestor.fullyDereferenced.definitions.child.properties.children.items.properties =
-//   indirectAncestor.fullyDereferenced.definitions.child.properties;
-
-  export const dereferenced: any = { self, ancestor, indirect, indirectAncestor }
+export const dereferenced: any = { self, ancestor, indirect, indirectAncestor, selfCycled }
