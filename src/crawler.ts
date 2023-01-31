@@ -1,6 +1,4 @@
-import { ObjPath } from "./utils"
-
-export const isObject = (value: any): value is Record<string | number | symbol, any> => typeof value === "object" && value !== null
+import { isObject, ObjPath } from "./utils"
 
 export interface CrawlContext<T> {
   readonly root?: any             // root node

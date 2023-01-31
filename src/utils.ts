@@ -17,6 +17,8 @@ export class MapArray<K, V> extends Map<K, Array<V>> {
   }
 }
 
+export const isObject = (value: any): value is Record<string | number | symbol, any> => typeof value === "object" && value !== null
+
 export const validURL = (str: any) => {
   var pattern = new RegExp('^(https?:\\/\\/)'+ // protocol
     '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
@@ -99,11 +101,11 @@ export const buildPointer = (path: ObjPath): string => {
 }
 
 export const mergeValues = (value: any, patch: any) => {
-  if (Array.isArray(value)) {
+  if (Array.isArray(value) && Array.isArray(patch)) {
     return Array.isArray(patch) ? [...value, ...patch] : [...value]
-  } else if (typeof value === "object" && typeof patch === "object" && patch && value) {
+  } else if (isObject(value) && isObject(patch)) {
     const result = { ...value }
-    for(const key of Reflect.ownKeys(patch)) {
+    for(const key of Object.keys(patch)) {
       result[key] = mergeValues(result[key], patch[key])
     }
     return result

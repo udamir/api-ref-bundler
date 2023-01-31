@@ -71,12 +71,11 @@ describe("Schema with circular $refs that extend each other", () => {
 
     it('should dereference successfully circular $refs if "enableCircular" is true', async () => {
       const schema = await dereference("specs/circular-extended/circular-extended-indirect-ancestor.yaml", resolver, { enableCircular: true })
-      // expect(schema).toMatchObject(circularExtended.dereferenced.indirectAncestor.fullyDereferenced);
       // Reference equality
-      expect(schema.definitions.parent.properties.child.properties)
-        .toMatchObject(schema.definitions.child.properties);
-      expect(schema.definitions.child.properties.children.items)
+      expect(schema.definitions.parent.properties.child.properties.children.items.properties.children.items)
         .toMatchObject(schema.definitions.parent.properties.child.properties.children.items);
+      expect(schema.definitions.child.properties.children.items)
+        .toMatchObject(schema.definitions.child);
       expect(schema.definitions.pet.properties)
         .toMatchObject(schema.definitions.child.properties.pet.properties);
     });

@@ -1,5 +1,4 @@
-import { getValueByPath, mergeValues, parsePointer, parseRef } from "./utils"
-import { isObject } from "./crawler"
+import { getValueByPath, mergeValues, parsePointer, parseRef, isObject } from "./utils"
 
 export type Resolver = (sourcePath: string) => Promise<Object>
 

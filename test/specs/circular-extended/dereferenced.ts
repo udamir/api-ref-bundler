@@ -104,8 +104,38 @@ const indirect: any = {
       properties: {
         parents: {
           items: {
-            $ref: '#/definitions/parent',
             description: 'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "parent".\n',
+            title: "parent",
+            properties: {
+              name: {
+                type: "string"
+              },
+              children: {
+                items: {
+                  title: "child",
+                  description: 'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "child".\n',
+                  properties: {
+                    parents: {
+                      items: {
+                        $ref: '#/definitions/parent',
+                        description: 'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "parent".\n',
+                      },
+                      type: "array"
+                    },
+                    pet: {
+                      description: 'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "pet".\n',
+                      title: "pet",
+                      type: "object",
+                      properties: pet.properties,
+                    },
+                    name: {
+                      type: "string"
+                    }
+                  }
+                },
+                type: "array"
+              }
+            }
           },
           type: "array"
         },
@@ -190,26 +220,7 @@ const indirectAncestor: any = {
         },
         children: {
           items: {
-            description: 'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "child".\n',
-            title: "child",
-            properties: {
-              pet: {
-                description: 'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "pet".\n',
-                title: "pet",
-                type: "object",
-                properties: pet.properties,
-              },
-              name: {
-                type: "string"
-              },
-              children: {
-                items: {
-                  $ref: '#/definitions/parent/properties/child/properties/children/items'
-                },
-                type: "array",
-                description: "children"
-              }
-            },
+            $ref: '#/definitions/child'
           },
           type: "array",
           description: "children"

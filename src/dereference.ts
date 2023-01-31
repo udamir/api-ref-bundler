@@ -1,8 +1,8 @@
 import { 
-  buildPointer, buildRef, getValueByPath, MapArray, mergeValues, ObjPath, 
-  parsePointer, parseRef, setValueByPath
+  buildPointer, buildRef, getValueByPath, MapArray, mergeValues, 
+  ObjPath, parseRef, setValueByPath, isObject
 } from "./utils"
-import { clone, CrawlContext, CrawlHook, isObject } from "./crawler"
+import { clone, CrawlContext, CrawlHook } from "./crawler"
 import { RefResolver, Resolver } from "./resolver"
 
 // Symbol key for cycled nodes (used for enableCircular mode)
@@ -11,30 +11,30 @@ const cycleRef = Symbol("cycleRef")
 export interface RefNode {
   pointer: string   // pointer to node
   ref: string       // normalized ref
-  sibling?: any     // sibling value
+  sibling?: any     // sibling content
 }
 
 export interface DereferenceParams {
   refNodes: RefNode[] // parent ref nodes
-  basePath: string    // current file
-  path: ObjPath       // path in current file
+  baseFile: string    // current file
 }
 
 export type DereferenceContext = CrawlContext<DereferenceParams>
 
 export interface DereferenceOptions {
-  ignoreSibling?: boolean
-  enableCircular?: boolean
+  ignoreSibling?: boolean   // ignore $ref sibling content
+  fullCrawl?: boolean       // crawl all nodes includin cached
+  enableCircular?: boolean  // convert circular $refs to nodes
   hooks?: {
-    onError?: (message: string, ctx: DereferenceContext) => void
-    onRef?: (ref: string, ctx: DereferenceContext) => void
-    onCrawl?: (value: any, ctx: DereferenceContext) => void
-    onCycle?: (ref: string, ctx: DereferenceContext) => void
+    onError?: (message: string, ctx: DereferenceContext) => void  // error hook
+    onRef?: (ref: string, ctx: DereferenceContext) => void        // ref hook
+    onCrawl?: (value: any, ctx: DereferenceContext) => void       // node crawl hook
+    onCycle?: (ref: string, ctx: DereferenceContext) => void      // cycle refs hook
   }
 }
 
 export const dereference = async (basePath: string, resolver: Resolver, options: DereferenceOptions = {}) => {
-  const { ignoreSibling, enableCircular, hooks } = options
+  const { ignoreSibling, enableCircular, fullCrawl, hooks } = options
   const baseRef = parseRef(basePath)
 
   const refResolver = new RefResolver(baseRef.filePath, resolver)
@@ -42,8 +42,7 @@ export const dereference = async (basePath: string, resolver: Resolver, options:
 
   const _params: DereferenceParams = { 
     refNodes: [{ ref: baseRef.filePath, pointer: "" }],
-    basePath: baseRef.filePath, 
-    path: parsePointer(baseRef.pointer)
+    baseFile: baseRef.filePath, 
   }
 
   /**
@@ -61,41 +60,36 @@ export const dereference = async (basePath: string, resolver: Resolver, options:
   const cycleNodes = new MapArray<string, ObjPath>()
 
   const hook: CrawlHook<DereferenceParams> = async (value, ctx) => {
-    const { params, path, key } = ctx
+    const { params, path, key, node } = ctx
 
-    // console.debug(params.basePath, buildPointer([...params.path, ...ctx.path]))
-
-    /**
-     * Exit hook to update nodes with cycle $refs
-     * (used for enableCircular mode)
-     */
-    const circularHook = () => {
-      const refs = cycleNodes.get(buildPointer([...params.path, ...ctx.path]))
-
-      if (!refs) { return }
-
-      for (const ref of refs) {
-        // get sibling content from cycle node
-        const path = ["#", ...ref.slice(ctx.params.path.length)]
-        const sibling = getValueByPath(ctx.root, path)
-
-        // skip if already resolved
-        if (sibling && sibling[cycleRef]) { continue }
-
-        // merge with sibling
-        const value = sibling ? mergeValues(ctx.node[key], sibling) : ctx.node[key]
-        // add cycle ref symbol to node
-        value[cycleRef] = buildRef([...ctx.path, ...ctx.params.path])
-
-        // update cycle node
-        setValueByPath(ctx.root, path, value)
-      }
-    }
+    // console.debug(buildPointer(path), params.baseFile)
 
     const exitHook = () => {
-      if (!isObject(ctx.node[key])) { return }
-      cache.set(buildRef(ctx.path, params.basePath), ctx.node[key])
-      enableCircular && circularHook()
+      if (!isObject(node[key])) { return }
+      cache.set(buildRef(path, baseRef.filePath), node[key])
+      
+      // update nodes with cycle $refs
+      if (enableCircular) {
+        const refs = cycleNodes.get(buildPointer(path))
+
+        if (!refs) { return }
+  
+        for (const ref of refs) {
+          // get sibling content from cycle node
+          const sibling = getValueByPath(ctx.root["#"], ref)
+  
+          // skip if already resolved
+          if (sibling && sibling[cycleRef]) { continue }
+  
+          // merge with sibling
+          const value = sibling ? mergeValues(node[key], sibling) : node[key]
+          // add cycle ref symbol to node
+          value[cycleRef] = buildRef(path)
+  
+          // update cycle node
+          setValueByPath(ctx.root["#"], ref, value)
+        }
+      }
     }
 
     if (!isObject(value) || !value.hasOwnProperty("$ref")) {
@@ -103,70 +97,79 @@ export const dereference = async (basePath: string, resolver: Resolver, options:
       return { value, params, exitHook }
     }
 
-    const { $ref, ...sibling } = value
-    const { filePath, pointer, normalized } = parseRef($ref, params.basePath)
+    const { $ref, ...rest } = value
+    const sibling = (!Object.keys(rest).length || ignoreSibling) ? null : rest
+
+    const { filePath, pointer, normalized } = parseRef($ref, params.baseFile)
 
     hooks?.onRef && hooks.onRef(normalized, ctx)
 
     // check if current $ref was in parent nodes
     const refNode = params.refNodes.find((node, i, refNodes) => {
       // if node has sibling content, previous ref nodes should be equal
+      if (normalized !== node.ref) { return }
       const prevRefNode = refNodes[refNodes.length-1]
-      return normalized === node.ref && (!node.sibling || refNodes[i-1]?.ref === prevRefNode.ref)
+      return !node.sibling || refNodes[i-1]?.ref === prevRefNode.ref
     })
 
     if (refNode) {
       hooks?.onCycle && hooks.onCycle(refNode.pointer, ctx)
       let value
       if (enableCircular) {
-        cycleNodes.add(refNode.pointer, [ ...params.path, ...ctx.path ])
-        value = (ignoreSibling || refNode.sibling) ? null : sibling
+        cycleNodes.add(refNode.pointer, path)
+        value = (!sibling) ? null : sibling
       } else {
-        value = { $ref: "#" + refNode.pointer, ...(ignoreSibling || refNode.sibling) ? {} : sibling }
+        value = { $ref: "#" + refNode.pointer, ...sibling }
       }
       hooks?.onCrawl && hooks.onCrawl(value, ctx)
       return { value, params }
     }
 
-    // resolve reference on Exit and merge with sibling
-    const refExitHook = async () => {
-      let data
-      if (cache.has(normalized)) {
-        data = cache.get(normalized)
+    // resolve reference and merge with sibling
+    if (cache.has(normalized)) {
+      const data = cache.get(normalized)
+      const value = (!isObject(data) || !sibling) ? data : mergeValues(data, sibling)
+      hooks?.onCrawl && hooks.onCrawl(value, ctx)
+      if (fullCrawl) {
+        return { value, params: params, exitHook }
       } else {
-        const resolvedPointer = await refResolver.resolvePointer(pointer, filePath)
+        return { value: sibling, params, exitHook: () => {
+          node[key] = (!isObject(data) || !sibling) ? data : mergeValues(data, node[key])
+          exitHook()
+        } }
+      }
+    } else {
+      const resolved = await refResolver.resolvePointer(pointer, filePath)
 
-        if (!resolvedPointer.value) {
-          hooks?.onError && hooks.onError(`Cannot resolve: ${normalized}`, ctx)
-          ctx.node[key] = { $ref: normalized, ...ctx.node[key] }
-          return 
-        }
+      if (!resolved.value) {
+        hooks?.onError && hooks.onError(`Cannot resolve: ${normalized}`, ctx)
+        return { value: { $ref: normalized, ...sibling }, params }
+      }
+      
+      // merge resolved value with silbing
+      const data = (!isObject(resolved.value) || !sibling)
+        ? resolved.value
+        : mergeValues(resolved.value, sibling)
 
-        const _params: DereferenceParams = { 
+      // dereference resolved value merged with sibling
+      const result = await hook(data, { 
+        ...ctx, 
+        params: { 
           refNodes: [ ...params.refNodes, { 
             ref: normalized,
-            pointer: buildPointer([ ...params.path, ...path ]),
-            sibling: !ignoreSibling && !!Object.keys(sibling).length ? ctx.node[key] : undefined 
+            pointer: buildPointer(path),
+            sibling
           }],
-          basePath: resolvedPointer.filePath,
-          path: [ ...params.path, ...path ]
+          baseFile: resolved.filePath
         }
-        
-        if (hooks?.onCrawl) {
-          const value = (!isObject(resolvedPointer.value) || ignoreSibling) ? resolvedPointer.value : mergeValues(resolvedPointer.value, ctx.node[key])
-          hooks.onCrawl(value, ctx)
-        }
+      })
 
-        // dereference resolved value and save to cache
-        data = await clone(resolvedPointer.value, _params, hook)
-        cache.set(normalized, data)
-      }
-      ctx.node[key] = (!isObject(data) || ignoreSibling) ? data : mergeValues(data, ctx.node[key])
-
-      enableCircular && circularHook()
+      // save dereferenced result to cache if no sibling content
+      return { ...result, exitHook: () => {
+        !sibling && isObject(node[key]) && cache.set(normalized, node[key])
+        result?.exitHook && result.exitHook()
+      }}
     }
-
-    return { value: ignoreSibling ? null : sibling, params, exitHook: refExitHook }
   }
 
   return clone(base, _params, hook)

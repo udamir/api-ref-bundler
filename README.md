@@ -1,7 +1,7 @@
 # api-ref-bundler
 <img alt="npm" src="https://img.shields.io/npm/v/api-ref-bundler"> <img alt="npm" src="https://img.shields.io/npm/dm/api-ref-bundler?label=npm"> <img alt="npm type definitions" src="https://img.shields.io/npm/types/api-ref-bundler"> <img alt="GitHub" src="https://img.shields.io/github/license/udamir/api-ref-bundler">
 
-This package provides utils to resolve all external references in Json based API document and bundle into single document
+This package provides utils to resolve all external/internal references in Json based API document and bundle into single document
 
 ## Works perfectly with API specifications
 
@@ -68,11 +68,11 @@ dereference("schema.json#/properties/foo", resolver).then(foo => {
 #### Bundle options
 ```ts
 interface BundleOptions {
-  ignoreSibling?: boolean
+  ignoreSibling?: boolean     // ignore $ref sibling content
   hooks?: {
-    onError: (message: string, ctx: CrawlContext<BundleParams>) => void
-    onRef: (ref: string, ctx: CrawlContext<BundleParams>) => void
-    onCrawl: (value: any, ctx: CrawlContext<BundleParams>) => void
+    onError?: (message: string, ctx: BundleContext) => void // error hook
+    onRef?: (ref: string, ctx: BundleContext) => void       // ref hook
+    onCrawl?: (value: any, ctx: BundleContext) => void      // node crawl hook
   }
 }
 ```
@@ -80,13 +80,14 @@ interface BundleOptions {
 #### Dereference options
 ```ts
 interface DereferenceOptions {
-  ignoreSibling?: boolean
-  enableCircular?: boolean
+  ignoreSibling?: boolean   // ignore $ref sibling content
+  fullCrawl?: boolean       // crawl all nodes includin cached
+  enableCircular?: boolean  // convert circular $refs to nodes
   hooks?: {
-    onError: (message: string, ctx: CrawlContext<DereferenceParams>) => void
-    onRef: (ref: string, ctx: CrawlContext<DereferenceParams>) => void
-    onCrawl: (value: any, ctx: CrawlContext<DereferenceParams>) => void
-    onCycle: (ref: string, ctx: CrawlContext<DereferenceParams>) => void
+    onError?: (message: string, ctx: DereferenceContext) => void  // error hook
+    onRef?: (ref: string, ctx: DereferenceContext) => void        // ref hook
+    onCrawl?: (value: any, ctx: DereferenceContext) => void       // node crawl hook
+    onCycle?: (ref: string, ctx: DereferenceContext) => void      // cycle refs hook
   }
 }
 ```

@@ -1,23 +1,24 @@
 import { 
   buildPointer, createRef, calcJsonType, filename, getValueByPath, isJsonSchema,
-  JsonType, mergeValues, normalize, parseRef, setValueByPath,
+  JsonType, mergeValues, normalize, parseRef, setValueByPath, ObjPath, isObject
 } from "./utils"
-import { clone, CrawlContext, CrawlHook, isObject } from "./crawler"
+import { clone, CrawlContext, CrawlHook } from "./crawler"
 import { RefResolver, Resolver } from "./resolver"
 import { DereferenceParams } from "./dereference"
 
 export interface BundleParams extends DereferenceParams {
-  defPrefix?: string
+  defPrefix?: string  
+  path: ObjPath       // path in current file
 }
 
 export type BundleContext = CrawlContext<BundleParams>
 
 export interface BundleOptions {
-  ignoreSibling?: boolean
+  ignoreSibling?: boolean     // ignore $ref sibling content
   hooks?: {
-    onError?: (message: string, ctx: BundleContext) => void
-    onRef?: (ref: string, ctx: BundleContext) => void
-    onCrawl?: (value: any, ctx: BundleContext) => void
+    onError?: (message: string, ctx: BundleContext) => void // error hook
+    onRef?: (ref: string, ctx: BundleContext) => void       // ref hook
+    onCrawl?: (value: any, ctx: BundleContext) => void      // node crawl hook
   }
 }
 
@@ -25,7 +26,7 @@ export const bundle = async (basePath: string, resolver: Resolver, options: Bund
   const refResolver = new RefResolver(basePath, resolver)
 
   basePath = createRef(normalize(basePath))
-  const bundleParams: BundleParams = { refNodes: [ { ref: basePath, pointer: "" }], basePath, path: [] }
+  const bundleParams: BundleParams = { refNodes: [ { ref: basePath, pointer: "" }], baseFile: basePath, path: [] }
   const base = await refResolver.base()
   const apiType: JsonType = calcJsonType(base)
   const defLinks = new Map<string, string>()
@@ -52,7 +53,7 @@ export const bundle = async (basePath: string, resolver: Resolver, options: Bund
     }
 
     const { $ref, ...rest } = value
-    const { filePath, pointer, normalized } = parseRef($ref, params.basePath)
+    const { filePath, pointer, normalized } = parseRef($ref, params.baseFile)
 
     hooks?.onRef && hooks.onRef(normalized, ctx)
 
@@ -111,7 +112,7 @@ export const bundle = async (basePath: string, resolver: Resolver, options: Bund
         }
 
         const _params: BundleParams = { 
-          basePath: resolvedPointer.filePath,
+          baseFile: resolvedPointer.filePath,
           path: defPath,
           refNodes: [ ...params.refNodes, _ref ],
           defPrefix: defName + "-"
@@ -140,7 +141,7 @@ export const bundle = async (basePath: string, resolver: Resolver, options: Bund
         
         const _params: BundleParams = {
           refNodes: [ ...params.refNodes, _ref ],
-          basePath: resolvedPointer.filePath,
+          baseFile: resolvedPointer.filePath,
           path: _path
         }
 
