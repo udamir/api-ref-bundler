@@ -1,10 +1,11 @@
 import { 
   buildPointer, createRef, calcJsonType, filename, getValueByPath, isJsonSchema,
-  JsonType, mergeValues, normalize, parseRef, setValueByPath, ObjPath, isObject
+  JsonType, mergeValues, parseRef, setValueByPath, ObjPath, isObject
 } from "./utils"
 import { clone, CrawlContext, CrawlHook } from "./crawler"
 import { RefResolver, Resolver } from "./resolver"
 import { DereferenceParams } from "./dereference"
+import { normalize } from "./normalize"
 
 export interface BundleParams extends DereferenceParams {
   defPrefix?: string  
@@ -19,6 +20,7 @@ export interface BundleOptions {
     onError?: (message: string, ctx: BundleContext) => void // error hook
     onRef?: (ref: string, ctx: BundleContext) => void       // ref hook
     onCrawl?: (value: any, ctx: BundleContext) => void      // node crawl hook
+    onExit?: (value: any, ctx: BundleContext) => void      // node crawl exit hook
   }
 }
 
@@ -52,6 +54,10 @@ export const bundle = async (basePath: string, resolver: Resolver, options: Bund
       return { value, params }
     }
 
+    const exitHook = () => {
+      hooks?.onExit && hooks.onExit(ctx.node[key], ctx)
+    }
+
     const { $ref, ...rest } = value
     const { filePath, pointer, normalized } = parseRef($ref, params.baseFile)
 
@@ -59,13 +65,13 @@ export const bundle = async (basePath: string, resolver: Resolver, options: Bund
 
     if (filePath === basePath) {
       // resolve internal reference
-      return { value: { $ref: createRef("", pointer), ...rest }, params }
+      return { value: { $ref: createRef("", pointer), ...rest }, params, exitHook }
     } else if (defLinks.has(normalized)) {
       // check if ref already added to root definitions
-      return { value: { $ref: defLinks.get(normalized), ...rest }, params }
+      return { value: { $ref: defLinks.get(normalized), ...rest }, params, exitHook }
     } else if (defLinks.has(filePath) && !/\/(definitions|defs)/g.test(pointer)) {
       // check if filepath already added to root definitions
-      return { value: { $ref: defLinks.get(filePath) + pointer, ...rest }, params }
+      return { value: { $ref: defLinks.get(filePath) + pointer, ...rest }, params, exitHook }
     } else {
       // resolve source
       const resolvedPointer = await refResolver.resolvePointer(pointer, filePath)
@@ -73,12 +79,12 @@ export const bundle = async (basePath: string, resolver: Resolver, options: Bund
       if (!resolvedPointer.value) {
         hooks?.onError && hooks.onError(`Cannot resolve: ${normalized}`, ctx)
 
-        return { value: { $ref: normalized }, params }
+        return { value: { $ref: normalized }, params, exitHook }
       }
 
       // reference to text file
       if (typeof resolvedPointer.value === "string") {
-        return { value: resolvedPointer.value, params }
+        return { value: resolvedPointer.value, params, exitHook }
       }
 
       const defPath = getDefinitionPath(apiType, pointer, resolvedPointer.value)
@@ -125,13 +131,13 @@ export const bundle = async (basePath: string, resolver: Resolver, options: Bund
             return null
           }
   
-          return { value: { $ref: "#" + defPointer, ...rest }, params }
+          return { value: { $ref: "#" + defPointer, ...rest }, params, exitHook }
         }
       }
 
       defLinks.set(normalized, "#" + currentPointer)
       
-      const exitHook = async () => {
+      const _exitHook = async () => {
         const _path = [ ...params.path, ...path ]
 
         const _ref = { 
@@ -148,9 +154,10 @@ export const bundle = async (basePath: string, resolver: Resolver, options: Bund
         const data = await clone(resolvedPointer.value, _params, hook)
 
         ctx.node[key] = (!isObject(data) || ignoreSibling) ? data : mergeValues(data, ctx.node[key])
+        exitHook()
       }
        
-      return { value: ignoreSibling ? {} : rest, params, exitHook }
+      return { value: ignoreSibling ? {} : rest, params, exitHook: _exitHook }
     }
   }
 

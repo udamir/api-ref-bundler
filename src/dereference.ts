@@ -29,6 +29,7 @@ export interface DereferenceOptions {
     onError?: (message: string, ctx: DereferenceContext) => void  // error hook
     onRef?: (ref: string, ctx: DereferenceContext) => void        // ref hook
     onCrawl?: (value: any, ctx: DereferenceContext) => void       // node crawl hook
+    onExit?: (value: any, ctx: DereferenceContext) => void        // node crawl exit hook
     onCycle?: (ref: string, ctx: DereferenceContext) => void      // cycle refs hook
   }
 }
@@ -65,6 +66,7 @@ export const dereference = async (basePath: string, resolver: Resolver, options:
     // console.debug(buildPointer(path), params.baseFile)
 
     const exitHook = () => {
+      hooks?.onExit && hooks.onExit(node[key], ctx)
       if (!isObject(node[key])) { return }
       cache.set(buildRef(path, baseRef.filePath), node[key])
       
@@ -122,7 +124,7 @@ export const dereference = async (basePath: string, resolver: Resolver, options:
         value = { $ref: "#" + refNode.pointer, ...sibling }
       }
       hooks?.onCrawl && hooks.onCrawl(value, ctx)
-      return { value, params }
+      return { value, params, exitHook: () => { hooks?.onExit && hooks.onExit(node[key], ctx) } }
     }
 
     // resolve reference and merge with sibling

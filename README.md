@@ -73,6 +73,7 @@ interface BundleOptions {
     onError?: (message: string, ctx: BundleContext) => void // error hook
     onRef?: (ref: string, ctx: BundleContext) => void       // ref hook
     onCrawl?: (value: any, ctx: BundleContext) => void      // node crawl hook
+    onExit?: (value: any, ctx: BundleContext) => void      // node crawl exit hook
   }
 }
 ```
@@ -87,6 +88,7 @@ interface DereferenceOptions {
     onError?: (message: string, ctx: DereferenceContext) => void  // error hook
     onRef?: (ref: string, ctx: DereferenceContext) => void        // ref hook
     onCrawl?: (value: any, ctx: DereferenceContext) => void       // node crawl hook
+    onExit?: (value: any, ctx: DereferenceContext) => void       // node crawl exit hook
     onCycle?: (ref: string, ctx: DereferenceContext) => void      // cycle refs hook
   }
 }
