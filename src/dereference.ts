@@ -94,7 +94,7 @@ export const dereference = async (basePath: string, resolver: Resolver, options:
       }
     }
 
-    if (!isObject(value) || !value.hasOwnProperty("$ref")) {
+    if (!isObject(value) || !value.hasOwnProperty("$ref") || typeof value.$ref !== "string") {
       hooks?.onCrawl && hooks.onCrawl(value, ctx)
       return { value, params, exitHook }
     }

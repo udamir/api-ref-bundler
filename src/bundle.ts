@@ -50,7 +50,7 @@ export const bundle = async (basePath: string, resolver: Resolver, options: Bund
       newDefs.set(currentPointer, true)
     }
     
-    if (!isObject(value) || !value.hasOwnProperty("$ref")) {
+    if (!isObject(value) || !value.hasOwnProperty("$ref") || typeof value.$ref !== "string") {
       return { value, params }
     }
 
