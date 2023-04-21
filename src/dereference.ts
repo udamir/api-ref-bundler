@@ -14,36 +14,30 @@ export interface RefNode {
   sibling?: any     // sibling content
 }
 
-export interface DereferenceParams {
+export interface DereferenceState {
   refNodes: RefNode[] // parent ref nodes
   baseFile: string    // current file
 }
-
-export type DereferenceContext = CrawlContext<DereferenceParams>
 
 export interface DereferenceOptions {
   ignoreSibling?: boolean   // ignore $ref sibling content
   fullCrawl?: boolean       // crawl all nodes includin cached
   enableCircular?: boolean  // convert circular $refs to nodes
   hooks?: {
-    onError?: (message: string, ctx: DereferenceContext) => void  // error hook
-    onRef?: (ref: string, ctx: DereferenceContext) => void        // ref hook
-    onCrawl?: (value: any, ctx: DereferenceContext) => void       // node crawl hook
-    onExit?: (value: any, ctx: DereferenceContext) => void        // node crawl exit hook
-    onCycle?: (ref: string, ctx: DereferenceContext) => void      // cycle refs hook
+    onError?: (message: string, ctx: CrawlContext<DereferenceState>) => void  // error hook
+    onRef?: (ref: string, ctx: CrawlContext<DereferenceState>) => void        // ref hook
+    onCrawl?: (value: any, ctx: CrawlContext<DereferenceState>) => void       // node crawl hook
+    onExit?: (value: any, ctx: CrawlContext<DereferenceState>) => void        // node crawl exit hook
+    onCycle?: (ref: string, ctx: CrawlContext<DereferenceState>) => void      // cycle refs hook
   }
 }
 
-export const dereference = async (basePath: string, resolver: Resolver, options: DereferenceOptions = {}) => {
+export const dereferenceHook = (basePath: string, refResolver: RefResolver, options: DereferenceOptions = {}): CrawlHook<DereferenceState> => {
   const { ignoreSibling, enableCircular, fullCrawl, hooks } = options
-  const baseRef = parseRef(basePath)
 
-  const refResolver = new RefResolver(baseRef.filePath, resolver)
-  const base = await refResolver.base(baseRef.pointer)
-
-  const _params: DereferenceParams = { 
-    refNodes: [{ ref: baseRef.filePath, pointer: "" }],
-    baseFile: baseRef.filePath, 
+  const defaultState: DereferenceState = { 
+    refNodes: [{ ref: basePath, pointer: "" }],
+    baseFile: basePath, 
   }
 
   /**
@@ -60,15 +54,15 @@ export const dereference = async (basePath: string, resolver: Resolver, options:
    */
   const cycleNodes = new MapArray<string, ObjPath>()
 
-  const hook: CrawlHook<DereferenceParams> = async (value, ctx) => {
-    const { params, path, key, node } = ctx
+  const hook: CrawlHook<DereferenceState> = async (value, ctx) => {
+    const { path, key, node, state = defaultState } = ctx
 
-    // console.debug(buildPointer(path), params.baseFile)
+    // console.debug(buildPointer(path), state.baseFile)
 
     const exitHook = () => {
       hooks?.onExit && hooks.onExit(node[key], ctx)
       if (!isObject(node[key])) { return }
-      cache.set(buildRef(path, baseRef.filePath), node[key])
+      cache.set(buildRef(path, state.baseFile), node[key])
       
       // update nodes with cycle $refs
       if (enableCircular) {
@@ -96,18 +90,18 @@ export const dereference = async (basePath: string, resolver: Resolver, options:
 
     if (!isObject(value) || !value.hasOwnProperty("$ref") || typeof value.$ref !== "string") {
       hooks?.onCrawl && hooks.onCrawl(value, ctx)
-      return { value, params, exitHook }
+      return { value, state, exitHook }
     }
 
     const { $ref, ...rest } = value
     const sibling = (!Object.keys(rest).length || ignoreSibling) ? null : rest
 
-    const { filePath, pointer, normalized } = parseRef($ref, params.baseFile)
+    const { filePath, pointer, normalized } = parseRef($ref, state.baseFile)
 
     hooks?.onRef && hooks.onRef(normalized, ctx)
 
     // check if current $ref was in parent nodes
-    const refNode = params.refNodes.find((node, i, refNodes) => {
+    const refNode = state.refNodes.find((node, i, refNodes) => {
       // if node has sibling content, previous ref nodes should be equal
       if (normalized !== node.ref) { return }
       const prevRefNode = refNodes[refNodes.length-1]
@@ -124,7 +118,7 @@ export const dereference = async (basePath: string, resolver: Resolver, options:
         value = { $ref: "#" + refNode.pointer, ...sibling }
       }
       hooks?.onCrawl && hooks.onCrawl(value, ctx)
-      return { value, params, exitHook: () => { hooks?.onExit && hooks.onExit(node[key], ctx) } }
+      return { value, state, exitHook: () => { hooks?.onExit && hooks.onExit(node[key], ctx) } }
     }
 
     // resolve reference and merge with sibling
@@ -133,9 +127,9 @@ export const dereference = async (basePath: string, resolver: Resolver, options:
       const value = (!isObject(data) || !sibling) ? data : mergeValues(data, sibling)
       hooks?.onCrawl && hooks.onCrawl(value, ctx)
       if (fullCrawl) {
-        return { value, params: params, exitHook }
+        return { value, state, exitHook }
       } else {
-        return { value: sibling, params, exitHook: () => {
+        return { value: sibling, state, exitHook: () => {
           node[key] = (!isObject(data) || !sibling) ? data : mergeValues(data, node[key])
           exitHook()
         } }
@@ -145,7 +139,7 @@ export const dereference = async (basePath: string, resolver: Resolver, options:
 
       if (!resolved.value) {
         hooks?.onError && hooks.onError(`Cannot resolve: ${normalized}`, ctx)
-        return { value: { $ref: normalized, ...sibling }, params }
+        return { value: { $ref: normalized, ...sibling }, state }
       }
       
       // merge resolved value with silbing
@@ -154,17 +148,14 @@ export const dereference = async (basePath: string, resolver: Resolver, options:
         : mergeValues(resolved.value, sibling)
 
       // dereference resolved value merged with sibling
-      const result = await hook(data, { 
-        ...ctx, 
-        params: { 
-          refNodes: [ ...params.refNodes, { 
-            ref: normalized,
-            pointer: buildPointer(path),
-            sibling
-          }],
-          baseFile: resolved.filePath
-        }
-      })
+      const result = await hook(data, { ...ctx, state: { 
+        refNodes: [ ...state.refNodes, { 
+          ref: normalized,
+          pointer: buildPointer(path),
+          sibling
+        }],
+        baseFile: resolved.filePath
+      }})
 
       // save dereferenced result to cache if no sibling content
       return { ...result, exitHook: () => {
@@ -174,5 +165,14 @@ export const dereference = async (basePath: string, resolver: Resolver, options:
     }
   }
 
-  return clone(base, _params, hook)
+  return hook
+}
+
+export const dereference = async (basePath: string, resolver: Resolver, options: DereferenceOptions = {}) => {
+  const baseRef = parseRef(basePath)
+
+  const refResolver = new RefResolver(baseRef.filePath, resolver)
+  const base = await refResolver.base(baseRef.pointer)
+
+  return clone(base, dereferenceHook(baseRef.filePath, refResolver, options))
 }

@@ -1,4 +1,4 @@
-import { getValueByPath, mergeValues, parsePointer, parseRef, isObject } from "./utils"
+import { mergeValues, parsePointer, parseRef, isObject } from "./utils"
 
 export type Resolver = (sourcePath: string) => Promise<Object>
 
@@ -14,13 +14,8 @@ export class RefResolver {
   }
 
   public async base(pointer: string = "") {
-    const value = await this.resolve(this.basePath)
-    if (pointer) {
-      const path = parsePointer(pointer)
-      return getValueByPath(value, path)
-    } else {
-      return value
-    }
+    const { value } = await this.resolvePointer(pointer, this.basePath)
+    return value
   }
 
   private async resolve(sourcePath: string): Promise<any> {

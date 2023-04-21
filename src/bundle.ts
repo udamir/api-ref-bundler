@@ -4,43 +4,47 @@ import {
 } from "./utils"
 import { clone, CrawlContext, CrawlHook } from "./crawler"
 import { RefResolver, Resolver } from "./resolver"
-import { DereferenceParams } from "./dereference"
+import { DereferenceState } from "./dereference"
 import { normalize } from "./normalize"
 
-export interface BundleParams extends DereferenceParams {
-  defPrefix?: string  
-  path: ObjPath       // path in current file
+export interface BundleState extends DereferenceState {
+  defPrefix?: string
+  path: ObjPath                     // path in current file
 }
 
-export type BundleContext = CrawlContext<BundleParams>
-
 export interface BundleOptions {
-  ignoreSibling?: boolean     // ignore $ref sibling content
+  ignoreSibling?: boolean           // ignore $ref sibling content
   hooks?: {
-    onError?: (message: string, ctx: BundleContext) => void // error hook
-    onRef?: (ref: string, ctx: BundleContext) => void       // ref hook
-    onCrawl?: (value: any, ctx: BundleContext) => void      // node crawl hook
-    onExit?: (value: any, ctx: BundleContext) => void      // node crawl exit hook
+    onError?: (message: string, ctx: CrawlContext<BundleState>) => void // error hook
+    onRef?: (ref: string, ctx: CrawlContext<BundleState>) => void       // ref hook
+    onCrawl?: (value: any, ctx: CrawlContext<BundleState>) => void      // node crawl hook
+    onExit?: (value: any, ctx: CrawlContext<BundleState>) => void       // node crawl exit hook
   }
 }
 
-export const bundle = async (basePath: string, resolver: Resolver, options: BundleOptions = {}) => {
-  const refResolver = new RefResolver(basePath, resolver)
+export const bundle = async (baseFile: string, resolver: Resolver, options: BundleOptions = {}) => {
+  const refResolver = new RefResolver(baseFile, resolver)
 
-  basePath = createRef(normalize(basePath))
-  const bundleParams: BundleParams = { refNodes: [ { ref: basePath, pointer: "" }], baseFile: basePath, path: [] }
   const base = await refResolver.base()
-  const apiType: JsonType = calcJsonType(base)
+  const type = calcJsonType(base)
+
+  const basePath = createRef(normalize(baseFile))
+
+  const defaultState = {
+    refNodes: [ { ref: basePath, pointer: "" }],
+    baseFile: basePath, 
+    path: [],
+  }
+  const rootDefs: any = {}
   const defLinks = new Map<string, string>()
   const newDefs = new Map<string, boolean>()
-  const rootDefs: any = {}
   const { hooks, ignoreSibling } = options
 
-  const hook: CrawlHook<BundleParams> = async (value, ctx) => {
+  const hook: CrawlHook<BundleState> = async (value, ctx) => {
     hooks?.onCrawl && hooks?.onCrawl(value, ctx)
 
-    const { params, path, key } = ctx
-    const currentPointer = buildPointer([ ...params.path, ...path ])
+    const { path, key, state = defaultState } = ctx
+    const currentPointer = buildPointer([ ...state.path, ...path ])
 
     // console.debug(params.basePath, currentPointer)
 
@@ -51,7 +55,7 @@ export const bundle = async (basePath: string, resolver: Resolver, options: Bund
     }
     
     if (!isObject(value) || !value.hasOwnProperty("$ref") || typeof value.$ref !== "string") {
-      return { value, params }
+      return { value, state }
     }
 
     const exitHook = () => {
@@ -59,19 +63,19 @@ export const bundle = async (basePath: string, resolver: Resolver, options: Bund
     }
 
     const { $ref, ...rest } = value
-    const { filePath, pointer, normalized } = parseRef($ref, params.baseFile)
+    const { filePath, pointer, normalized } = parseRef($ref, state.baseFile)
 
     hooks?.onRef && hooks.onRef(normalized, ctx)
 
     if (filePath === basePath) {
       // resolve internal reference
-      return { value: { $ref: createRef("", pointer), ...rest }, params, exitHook }
+      return { value: { $ref: createRef("", pointer), ...rest }, state, exitHook }
     } else if (defLinks.has(normalized)) {
       // check if ref already added to root definitions
-      return { value: { $ref: defLinks.get(normalized), ...rest }, params, exitHook }
+      return { value: { $ref: defLinks.get(normalized), ...rest }, state, exitHook }
     } else if (defLinks.has(filePath) && !/\/(definitions|defs)/g.test(pointer)) {
       // check if filepath already added to root definitions
-      return { value: { $ref: defLinks.get(filePath) + pointer, ...rest }, params, exitHook }
+      return { value: { $ref: defLinks.get(filePath) + pointer, ...rest }, state, exitHook }
     } else {
       // resolve source
       const resolvedPointer = await refResolver.resolvePointer(pointer, filePath)
@@ -79,15 +83,15 @@ export const bundle = async (basePath: string, resolver: Resolver, options: Bund
       if (!resolvedPointer.value) {
         hooks?.onError && hooks.onError(`Cannot resolve: ${normalized}`, ctx)
 
-        return { value: { $ref: normalized }, params, exitHook }
+        return { value: { $ref: normalized }, state, exitHook }
       }
 
       // reference to text file
       if (typeof resolvedPointer.value === "string") {
-        return { value: resolvedPointer.value, params, exitHook }
+        return { value: resolvedPointer.value, state: state, exitHook }
       }
 
-      const defPath = getDefinitionPath(apiType, pointer, resolvedPointer.value)
+      const defPath = getDefinitionPath(type, pointer, resolvedPointer.value)
       if (defPath) {
         const { $defs, definitions, ...jsonSchema } = resolvedPointer.value
 
@@ -117,52 +121,61 @@ export const bundle = async (basePath: string, resolver: Resolver, options: Bund
           pointer: defPointer
         }
 
-        const _params: BundleParams = { 
-          baseFile: resolvedPointer.filePath,
-          path: defPath,
-          refNodes: [ ...params.refNodes, _ref ],
-          defPrefix: defName + "-"
-        }
+        const _paramsHook: CrawlHook<BundleState> = async (value: any) => {
+          return {
+            value,
+            state: { 
+              baseFile: resolvedPointer.filePath,
+              path: defPath,
+              refNodes: [ ...state.refNodes, _ref ],
+              defPrefix: defName + "-"
+            },   
+          }
+        } 
 
-        const _data = await clone(jsonSchema, _params, hook)
+        const _data = await clone<BundleState>(jsonSchema, [_paramsHook, hook])
         if (isObject(_data)) {
           setValueByPath(rootDefs, defPath, _data)
           if (defPointer === currentPointer) {
             return null
           }
   
-          return { value: { $ref: "#" + defPointer, ...rest }, params, exitHook }
+          return { value: { $ref: "#" + defPointer, ...rest }, state, exitHook }
         }
       }
 
       defLinks.set(normalized, "#" + currentPointer)
       
       const _exitHook = async () => {
-        const _path = [ ...params.path, ...path ]
+        const _path = [ ...state.path, ...path ]
 
         const _ref = { 
           ref: createRef(filePath, pointer),
           pointer: buildPointer(_path)
         }
         
-        const _params: BundleParams = {
-          refNodes: [ ...params.refNodes, _ref ],
-          baseFile: resolvedPointer.filePath,
-          path: _path
-        }
+        const _paramsHook: CrawlHook<BundleState> = async (value: any) => {
+          return {
+            value,
+            state: {
+              refNodes: [ ...state.refNodes, _ref ],
+              baseFile: resolvedPointer.filePath,
+              path: _path,
+            },   
+          }
+        } 
 
-        const data = await clone(resolvedPointer.value, _params, hook)
+        const data = await clone(resolvedPointer.value, [_paramsHook, hook])
 
         ctx.node[key] = (!isObject(data) || ignoreSibling) ? data : mergeValues(data, ctx.node[key])
         exitHook()
       }
        
-      return { value: ignoreSibling ? {} : rest, params, exitHook: _exitHook }
+      return { value: ignoreSibling ? {} : rest, state, exitHook: _exitHook }
     }
   }
 
-  const result = await clone(base, bundleParams, hook)
-
+  const result = await clone(base, hook)
   return mergeValues(result, rootDefs)
 }
 
