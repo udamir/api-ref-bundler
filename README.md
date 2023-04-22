@@ -1,7 +1,7 @@
 # api-ref-bundler
 <img alt="npm" src="https://img.shields.io/npm/v/api-ref-bundler"> <img alt="npm" src="https://img.shields.io/npm/dm/api-ref-bundler?label=npm"> <img alt="npm type definitions" src="https://img.shields.io/npm/types/api-ref-bundler"> <img alt="GitHub" src="https://img.shields.io/github/license/udamir/api-ref-bundler">
 
-This package provides utils to resolve all external/internal references in Json based API document and bundle into single document
+This package provides utils to resolve all external/internal references in Json based API document and bundle/dereference into single document
 
 ## Works perfectly with API specifications
 
@@ -69,6 +69,7 @@ dereference("schema.json#/properties/foo", resolver).then(foo => {
 ```ts
 interface BundleOptions {
   ignoreSibling?: boolean     // ignore $ref sibling content
+  parallelCrawl?: boolean     // parallel crawl can speedup bundle [experimental]
   hooks?: {
     onError?: (message: string, ctx: BundleContext) => void // error hook
     onRef?: (ref: string, ctx: BundleContext) => void       // ref hook
@@ -84,6 +85,7 @@ interface DereferenceOptions {
   ignoreSibling?: boolean   // ignore $ref sibling content
   fullCrawl?: boolean       // crawl all nodes includin cached
   enableCircular?: boolean  // convert circular $refs to nodes
+  parallelCrawl?: boolean   // parallel crawl can speedup dereference [experimental]
   hooks?: {
     onError?: (message: string, ctx: DereferenceContext) => void  // error hook
     onRef?: (ref: string, ctx: DereferenceContext) => void        // ref hook

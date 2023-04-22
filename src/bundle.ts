@@ -14,6 +14,7 @@ export interface BundleState extends DereferenceState {
 
 export interface BundleOptions {
   ignoreSibling?: boolean           // ignore $ref sibling content
+  parallelCrawl?: boolean           // parallel crawl can speedup bundle [experimental]
   hooks?: {
     onError?: (message: string, ctx: CrawlContext<BundleState>) => void // error hook
     onRef?: (ref: string, ctx: CrawlContext<BundleState>) => void       // ref hook
@@ -38,7 +39,7 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
   const rootDefs: any = {}
   const defLinks = new Map<string, string>()
   const newDefs = new Map<string, boolean>()
-  const { hooks, ignoreSibling } = options
+  const { hooks, ignoreSibling, parallelCrawl = false } = options
 
   const hook: CrawlHook<BundleState> = async (value, ctx) => {
     hooks?.onCrawl && hooks?.onCrawl(value, ctx)
@@ -95,7 +96,6 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
       if (defPath) {
         const { $defs, definitions, ...jsonSchema } = resolvedPointer.value
 
-
         const pathDefs = getValueByPath(rootDefs, defPath) || {}
 
         // try to find definition in new definitions
@@ -110,6 +110,12 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
             defName = uniqueDefinitionName({ ...resolvedDefs.value, ...pathDefs }, name)
           }
         }
+
+        // double check if ref already added to root definitions
+        if (defLinks.has(normalized)) {
+          return { value: { $ref: defLinks.get(normalized), ...rest }, state, exitHook }
+        }
+
         defPath.push(defName)
         const defPointer = buildPointer(defPath)
 
@@ -133,7 +139,7 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
           }
         } 
 
-        const _data = await clone<BundleState>(jsonSchema, [_paramsHook, hook])
+        const _data = await clone<BundleState>(jsonSchema, [_paramsHook, hook], parallelCrawl)
         if (isObject(_data)) {
           setValueByPath(rootDefs, defPath, _data)
           if (defPointer === currentPointer) {
@@ -165,7 +171,7 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
           }
         } 
 
-        const data = await clone(resolvedPointer.value, [_paramsHook, hook])
+        const data = await clone(resolvedPointer.value, [_paramsHook, hook], parallelCrawl)
 
         ctx.node[key] = (!isObject(data) || ignoreSibling) ? data : mergeValues(data, ctx.node[key])
         exitHook()
@@ -175,7 +181,7 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
     }
   }
 
-  const result = await clone(base, hook)
+  const result = await clone(base, hook, parallelCrawl)
   return mergeValues(result, rootDefs)
 }
 

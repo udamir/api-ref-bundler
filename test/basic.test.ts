@@ -15,9 +15,21 @@ describe("Basic tests", () => {
       // Reference equality
       expect(schema.properties.first).toEqual(schema.properties.last);
     })
+
+    it("should parallel dereference successfully", async () => {
+      const schema = await dereference("specs/root/root.yaml", resolver, { parallelCrawl: true });
+      expect(schema).toMatchObject(root.dereferenced)
+      // Reference equality
+      expect(schema.properties.first).toEqual(schema.properties.last);
+    })
   
     it("should bundle successfully", async () => {
       const schema = await bundle("specs/root/root.yaml", resolver)
+      expect(schema).toMatchObject(root.bundled)
+    })
+
+    it("should parallel bundle successfully", async () => {
+      const schema = await bundle("specs/root/root.yaml", resolver, { parallelCrawl: true })
       expect(schema).toMatchObject(root.bundled)
     })
   })

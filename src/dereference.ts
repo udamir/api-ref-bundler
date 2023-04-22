@@ -23,6 +23,7 @@ export interface DereferenceOptions {
   ignoreSibling?: boolean   // ignore $ref sibling content
   fullCrawl?: boolean       // crawl all nodes includin cached
   enableCircular?: boolean  // convert circular $refs to nodes
+  parallelCrawl?: boolean   // parallel crawl can speedup dereference [experimental]
   hooks?: {
     onError?: (message: string, ctx: CrawlContext<DereferenceState>) => void  // error hook
     onRef?: (ref: string, ctx: CrawlContext<DereferenceState>) => void        // ref hook
@@ -174,5 +175,5 @@ export const dereference = async (basePath: string, resolver: Resolver, options:
   const refResolver = new RefResolver(baseRef.filePath, resolver)
   const base = await refResolver.base(baseRef.pointer)
 
-  return clone(base, dereferenceHook(baseRef.filePath, refResolver, options))
+  return clone(base, dereferenceHook(baseRef.filePath, refResolver, options), options.parallelCrawl)
 }
