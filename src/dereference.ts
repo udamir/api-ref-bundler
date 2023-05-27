@@ -1,9 +1,10 @@
 import { 
   buildPointer, buildRef, getValueByPath, MapArray, mergeValues, 
-  ObjPath, parseRef, setValueByPath, isObject
+  parseRef, setValueByPath, isObject
 } from "./utils"
 import { clone, CrawlContext, CrawlHook } from "./crawler"
 import { RefResolver, Resolver } from "./resolver"
+import { ObjPath } from "./types"
 
 // Symbol key for cycled nodes (used for enableCircular mode)
 const cycleRef = Symbol("cycleRef")

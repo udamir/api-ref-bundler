@@ -1,4 +1,5 @@
-import { ObjPath, isObject } from "./utils"
+import { isObject } from "./utils"
+import { ObjPath } from "./types"
 
 export interface CrawlContext<T> {
   readonly root: any              // root node
@@ -8,7 +9,7 @@ export interface CrawlContext<T> {
   state?: T                       // crawl state
 }
 
-export type ExitHook = () => Promise<void> | void
+export type ExitHook = () => void
 
 export interface CrawlHookResponse<T> {
   value?: unknown,                        // updated value of current node for crawl
@@ -18,6 +19,8 @@ export interface CrawlHookResponse<T> {
 
 export type CrawlHook<T> = (value: unknown, ctx: CrawlContext<T>) => Promise<CrawlHookResponse<T> | null> | CrawlHookResponse<T> | null
 export type SyncCrawlHook<T> = (value: unknown, ctx: CrawlContext<T>) => | CrawlHookResponse<T> | null
+
+export const stateHookFactory = <T>(state: T): SyncCrawlHook<T> => (value: any) => ({ value, state })
 
 export const explore = async <T>(data: unknown, hooks: CrawlHook<T> | CrawlHook<T>[] = [], asyncCrawl = false) => {
   const root = { "#": data }
@@ -45,6 +48,7 @@ export const transform = async <T>(data: any, hooks: CrawlHook<T> | CrawlHook<T>
 
   return root["#"]
 }
+
 
 export const clone = async <T>(data: any, hooks: CrawlHook<T> | CrawlHook<T>[] = [], asyncCrawl = false) => {
   hooks = Array.isArray(hooks) ? hooks : [hooks]
@@ -98,7 +102,7 @@ export const crawl = async <T>(data: any, ctx: CrawlContext<T>, hooks: CrawlHook
   
   asyncCrawl && await Promise.all(promises)
   for (const exitHook of exitHooks.reverse()) {
-    await exitHook()
+    exitHook()
   }
 }
 

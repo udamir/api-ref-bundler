@@ -1,11 +1,13 @@
 import { 
-  buildPointer, createRef, calcJsonType, filename, getValueByPath, isJsonSchema,
-  JsonType, mergeValues, parseRef, setValueByPath, ObjPath, isObject
+  buildPointer, createRef, calcJsonType, filename, getValueByPath,
+  mergeValues, parseRef, setValueByPath, isObject, getRefMapRule
 } from "./utils"
-import { clone, CrawlContext, CrawlHook } from "./crawler"
+import { clone, CrawlContext, CrawlHook, stateHookFactory } from "./crawler"
 import { RefResolver, Resolver } from "./resolver"
 import { DereferenceState } from "./dereference"
+import { JsonType, ObjPath } from "./types"
 import { normalize } from "./normalize"
+import { refMapRules } from "./rules"
 
 export interface BundleState extends DereferenceState {
   defPrefix?: string
@@ -45,9 +47,10 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
     hooks?.onCrawl && hooks?.onCrawl(value, ctx)
 
     const { path, key, state = defaultState } = ctx
-    const currentPointer = buildPointer([ ...state.path, ...path ])
+    const fullPath = [ ...state.path, ...path ]
+    const currentPointer = buildPointer(fullPath)
 
-    // console.debug(params.basePath, currentPointer)
+    // console.debug(state.baseFile, currentPointer)
 
     // if current definition is alrady added to definitions then skip
     if (newDefs.has(currentPointer)) {
@@ -92,7 +95,7 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
         return { value: resolvedPointer.value, state: state, exitHook }
       }
 
-      const defPath = getDefinitionPath(type, pointer, resolvedPointer.value)
+      const defPath = getDefinitionPath(type, fullPath)
       if (defPath) {
         const { $defs, definitions, ...jsonSchema } = resolvedPointer.value
 
@@ -127,21 +130,18 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
           pointer: defPointer
         }
 
-        const _paramsHook: CrawlHook<BundleState> = async (value: any) => {
-          return {
-            value,
-            state: { 
-              baseFile: resolvedPointer.filePath,
-              path: defPath,
-              refNodes: [ ...state.refNodes, _ref ],
-              defPrefix: defName + "-"
-            },   
-          }
-        } 
+        const stateHook = stateHookFactory<BundleState>({
+          baseFile: resolvedPointer.filePath,
+          path: defPath,
+          refNodes: [ ...state.refNodes, _ref ],
+          defPrefix: defName + "-"
+        })
 
-        const _data = await clone<BundleState>(jsonSchema, [_paramsHook, hook], parallelCrawl)
+        const _data = await clone<BundleState>(jsonSchema, [stateHook, hook], parallelCrawl)
         if (isObject(_data)) {
           setValueByPath(rootDefs, defPath, _data)
+        }
+        if (getValueByPath(rootDefs, defPath)) {
           if (defPointer === currentPointer) {
             return null
           }
@@ -152,27 +152,20 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
 
       defLinks.set(normalized, "#" + currentPointer)
       
-      const _exitHook = async () => {
-        const _path = [ ...state.path, ...path ]
+      const _ref = { 
+        ref: createRef(filePath, pointer),
+        pointer: buildPointer(fullPath)
+      }
+      
+      const stateHook = stateHookFactory<BundleState>({
+        refNodes: [ ...state.refNodes, _ref ],
+        baseFile: resolvedPointer.filePath,
+        path: fullPath
+      })
 
-        const _ref = { 
-          ref: createRef(filePath, pointer),
-          pointer: buildPointer(_path)
-        }
-        
-        const _paramsHook: CrawlHook<BundleState> = async (value: any) => {
-          return {
-            value,
-            state: {
-              refNodes: [ ...state.refNodes, _ref ],
-              baseFile: resolvedPointer.filePath,
-              path: _path,
-            },   
-          }
-        } 
+      const data = await clone(resolvedPointer.value, [stateHook, hook], parallelCrawl)
 
-        const data = await clone(resolvedPointer.value, [_paramsHook, hook], parallelCrawl)
-
+      const _exitHook = () => {
         ctx.node[key] = (!isObject(data) || ignoreSibling) ? data : mergeValues(data, ctx.node[key])
         exitHook()
       }
@@ -185,28 +178,17 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
   return mergeValues(result, rootDefs)
 }
 
-const getDefinitionPath = (apiType: JsonType, ref: string, value: any): string[] | undefined => {
+const getDefinitionPath = (apiType: JsonType, path: ObjPath): string[] | undefined => {
+  const definitionPath = getRefMapRule(path, refMapRules[apiType])
   switch (apiType) {
     case "OpenApi3":
-      if (/^\/components\/(schemas|responses|parameters|examples|requestBodies|headers|securitySchemes|links|callbacks)\/+/.test(ref)) {
-        return ref.split("/").slice(1, 3)
-      } else {
-        return isJsonSchema(value) || value.$ref ? ["components", "schemas"] : undefined
-      }
+      return definitionPath ? definitionPath.split("/").slice(1, 3) : undefined
     case "OpenApi2":
-      if (/^\/(definitions|parameters|responses|securityDefinitions)/.test(ref)) {
-        return ref.split("/").slice(1, 2)
-      } else {
-        return isJsonSchema(value) || value.$ref ? ["definitions"] : undefined
-      }
+      return definitionPath ? definitionPath.split("/").slice(1, 2) : undefined
     case "AsyncApi2":
-      if (/^\/components\/(schemas|servers|serverVariables|channels|messages|securitySchemes|parameters|correlationIds|operationTraits|messageTraits|serverBindings|channelBindings|operationBindings|messageBindings)\/+/.test(ref)) {
-        return ref.split("/").slice(1, 3)
-      } else {
-        return isJsonSchema(value) || value.$ref ? ["components", "schemas"] : undefined
-      }
+      return definitionPath ? definitionPath.split("/").slice(1, 3) : undefined
     case "JsonSchema":
-      return isJsonSchema(value) || value.$ref ? ["definitions"] : undefined
+      return definitionPath ? ["definitions"] : undefined
     default:
       return
   }

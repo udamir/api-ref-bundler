@@ -1,3 +1,4 @@
+import { JsonType, ObjPath, RefMapRule, RefMapRules } from "./types"
 import { normalize } from "./normalize"
 
 const pathMask = {
@@ -31,10 +32,6 @@ export const validURL = (str: any) => {
   return !!pattern.test(str)
 }
 
-export type JsonType = "OpenApi3" | "OpenApi2" | "AsyncApi2" | "JsonSchema" | "unknown"
-
-export type ObjPath = (string | number)[]
-
 export const calcJsonType = (data: any): JsonType => {
   if (typeof data !== "object" || !data) { return "unknown" }
 
@@ -43,6 +40,28 @@ export const calcJsonType = (data: any): JsonType => {
   if (/2.+/.test(data?.asyncapi || "")) return "AsyncApi2"
   if (isJsonSchema(data)) return "JsonSchema"
   return "unknown"
+}
+
+export const getRefMapRule = (path: ObjPath, rules: RefMapRules): RefMapRule | undefined => {
+  let _rules = rules
+  for (let key of [...path]) {
+    // check if rules dont have key of key is array index
+    if (!_rules.hasOwnProperty(`/${key}`) || typeof key === "number") {
+      key = "*"
+    }
+
+    // check if rules have key
+    if (_rules.hasOwnProperty(`/${key}`)) {
+      const rule = _rules[`/${key}`]
+      if (typeof rule === "string") {
+        return rule
+      }
+      _rules = typeof rule === "function" ? rule() : rule
+    } else {
+      return
+    }
+  }
+  return typeof _rules === "string" ? _rules : _rules["/"]
 }
 
 export const parseRef = ($ref: string, basePath = "") => {
