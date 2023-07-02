@@ -1,6 +1,5 @@
 export * from "./bundle"
 export * from "./dereference"
-export * from "./crawler"
 export * from "./resolver"
 export * from "./utils"
 export * from "./types"

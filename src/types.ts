@@ -1,13 +1,8 @@
+import { CrawlRules } from "json-crawl"
+
 export type JsonType = "OpenApi3" | "OpenApi2" | "AsyncApi2" | "JsonSchema" | "unknown"
 
-export type ObjPath = (string | number)[]
+export type DefinitionPointer = `/${string}`
+export type RefMapRule = { "#": DefinitionPointer }
 
-export type RefMapRule = `#/${string}`
-
-export type RefMapRulesFunc = () => RefMapRules
-
-export type RefMapRules = {
-  [key: `/${string}`]: RefMapRule | RefMapRules | RefMapRulesFunc
-} & {
-  "/"?: RefMapRule
-}
+export type RefMapRules = CrawlRules<RefMapRule>

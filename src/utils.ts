@@ -1,5 +1,7 @@
-import { JsonType, ObjPath, RefMapRule, RefMapRules } from "./types"
+import { JsonPath, isArray, isObject } from "json-crawl"
+
 import { normalize } from "./normalize"
+import { JsonType } from "./types"
 
 const pathMask = {
   slash: /\//g,
@@ -20,8 +22,6 @@ export class MapArray<K, V> extends Map<K, Array<V>> {
   }
 }
 
-export const isObject = (value: unknown): value is Record<string | number, any> => typeof value === "object" && value !== null
-
 export const validURL = (str: any) => {
   var pattern = new RegExp('^(https?:\\/\\/)'+ // protocol
     '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
@@ -40,28 +40,6 @@ export const calcJsonType = (data: any): JsonType => {
   if (/2.+/.test(data?.asyncapi || "")) return "AsyncApi2"
   if (isJsonSchema(data)) return "JsonSchema"
   return "unknown"
-}
-
-export const getRefMapRule = (path: ObjPath, rules: RefMapRules): RefMapRule | undefined => {
-  let _rules = rules
-  for (let key of [...path]) {
-    // check if rules dont have key of key is array index
-    if (!_rules.hasOwnProperty(`/${key}`) || typeof key === "number") {
-      key = "*"
-    }
-
-    // check if rules have key
-    if (_rules.hasOwnProperty(`/${key}`)) {
-      const rule = _rules[`/${key}`]
-      if (typeof rule === "string") {
-        return rule
-      }
-      _rules = typeof rule === "function" ? rule() : rule
-    } else {
-      return
-    }
-  }
-  return typeof _rules === "string" ? _rules : _rules["/"]
 }
 
 export const parseRef = ($ref: string, basePath = "") => {
@@ -111,19 +89,19 @@ export const parsePointer = (pointer: string): string[] => {
   return pointer.split("/").map((i) => decodeURIComponent(i.replace(pathMask.escapedSlash, "/").replace(pathMask.escapedTilde, "~"))).slice(1)
 }
 
-export const buildRef = (path: ObjPath, fileName = ""): string => {
+export const buildRef = (path: JsonPath, fileName = ""): string => {
   if (!path.length) { return fileName || "#" }
   return fileName + "#" + buildPointer(path)
 }
 
-export const buildPointer = (path: ObjPath): string => {
+export const buildPointer = (path: JsonPath): string => {
   if (!path.length) { return "" }
   return "/" + path.map((i) => encodeURIComponent((String(i).replace(pathMask.tilde, "~0").replace(pathMask.slash, "~1")))).join("/")
 }
 
 export const mergeValues = (value: any, patch: any) => {
-  if (Array.isArray(value) && Array.isArray(patch)) {
-    return Array.isArray(patch) ? [...value, ...patch] : [...value]
+  if (isArray(value) && Array.isArray(patch)) {
+    return isArray(patch) ? [...value, ...patch] : [...value]
   } else if (isObject(value) && isObject(patch)) {
     const result = { ...value }
     for(const key of Object.keys(patch)) {
@@ -135,7 +113,7 @@ export const mergeValues = (value: any, patch: any) => {
   }
 }
 
-export const getValueByPath = (obj: any, path: ObjPath) => {
+export const getValueByPath = (obj: any, path: JsonPath) => {
   let value = obj
   for (const key of path) {
     value = Array.isArray(value) ? value[+key] : value[key]
@@ -146,7 +124,7 @@ export const getValueByPath = (obj: any, path: ObjPath) => {
   return value
 }
 
-export const setValueByPath = (obj: any, path: ObjPath, value: any, i = 0) => {
+export const setValueByPath = (obj: any, path: JsonPath, value: any, i = 0) => {
   if (i >= path.length) { return }
   
   const key = path[i]

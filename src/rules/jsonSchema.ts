@@ -1,10 +1,8 @@
-import { RefMapRule, RefMapRules } from "../types";
+import { DefinitionPointer, RefMapRules } from "../types";
 
-export const schemaRefMap = (definitionPath: RefMapRule): RefMapRules => ({
-  "/": definitionPath,
-  "/not": {
-    "/*": () => schemaRefMap(definitionPath),
-  },
+export const schemaRefMap = (definitionPath: DefinitionPointer): RefMapRules => ({
+  "#": definitionPath,
+  "/not": () => schemaRefMap(definitionPath),
   "/allOf": {
     "/*": () => schemaRefMap(definitionPath),
   },
@@ -14,7 +12,10 @@ export const schemaRefMap = (definitionPath: RefMapRule): RefMapRules => ({
   "/anyOf": {
     "/*": () => schemaRefMap(definitionPath),
   },
-  "/items": () => schemaRefMap(definitionPath),
+  "/items": () => ({
+    ...schemaRefMap(definitionPath),
+    "/*": () => schemaRefMap(definitionPath)
+  }),
   "/properties": {
     "/*": () => schemaRefMap(definitionPath),
   },
@@ -24,4 +25,4 @@ export const schemaRefMap = (definitionPath: RefMapRule): RefMapRules => ({
   }
 })
 
-export const jsonSchemaRefMap: RefMapRules = schemaRefMap("#/definitions")
+export const jsonSchemaRefMap: RefMapRules = schemaRefMap("/definitions")

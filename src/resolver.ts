@@ -1,4 +1,6 @@
-import { mergeValues, parsePointer, parseRef, isObject } from "./utils"
+import { isObject } from "json-crawl"
+
+import { mergeValues, parsePointer, parseRef } from "./utils"
 
 export type Resolver = (sourcePath: string) => Promise<Object>
 

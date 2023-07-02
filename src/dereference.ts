@@ -1,10 +1,6 @@
-import { 
-  buildPointer, buildRef, getValueByPath, MapArray, mergeValues, 
-  parseRef, setValueByPath, isObject
-} from "./utils"
-import { clone, CloneState, CrawlContext, CrawlHook } from "./crawler"
+import { CloneHook, CloneState, CrawlContext, JsonPath, clone, isObject } from "json-crawl"
+import { buildPointer, buildRef, getValueByPath, MapArray, mergeValues, parseRef, setValueByPath } from "./utils"
 import { RefResolver, Resolver } from "./resolver"
-import { ObjPath } from "./types"
 
 // Symbol key for cycled nodes (used for enableCircular mode)
 const cycleRef = Symbol("cycleRef")
@@ -20,21 +16,23 @@ export interface DereferenceState {
   baseFile: string    // current file
 }
 
+export type DereferenceContext = CrawlContext<CloneState<DereferenceState>>
+
 export interface DereferenceOptions {
   ignoreSibling?: boolean   // ignore $ref sibling content
   fullCrawl?: boolean       // crawl all nodes includin cached
   enableCircular?: boolean  // convert circular $refs to nodes
   parallelCrawl?: boolean   // parallel crawl can speedup dereference [experimental]
   hooks?: {
-    onError?: (message: string, ctx: CrawlContext<DereferenceState>) => void  // error hook
-    onRef?: (ref: string, ctx: CrawlContext<DereferenceState>) => void        // ref hook
-    onCrawl?: (value: any, ctx: CrawlContext<DereferenceState>) => void       // node crawl hook
-    onExit?: (value: any, ctx: CrawlContext<DereferenceState>) => void        // node crawl exit hook
-    onCycle?: (ref: string, ctx: CrawlContext<DereferenceState>) => void      // cycle refs hook
+    onError?: (message: string, ctx: DereferenceContext) => void  // error hook
+    onRef?: (ref: string, ctx: DereferenceContext) => void        // ref hook
+    onCrawl?: (value: any, ctx: DereferenceContext) => void       // node crawl hook
+    onExit?: (value: any, ctx: DereferenceContext) => void        // node crawl exit hook
+    onCycle?: (ref: string, ctx: DereferenceContext) => void      // cycle refs hook
   }
 }
 
-export const dereferenceHook = (basePath: string, refResolver: RefResolver, options: DereferenceOptions = {}): CrawlHook<CloneState<DereferenceState>> => {
+export const dereferenceHook = (basePath: string, refResolver: RefResolver, options: DereferenceOptions = {}): CloneHook<DereferenceState> => {
   const { ignoreSibling, enableCircular, fullCrawl, hooks } = options
 
   /**
@@ -49,9 +47,9 @@ export const dereferenceHook = (basePath: string, refResolver: RefResolver, opti
    * key    - pointer to source node
    * value  - path to cycle node
    */
-  const cycleNodes = new MapArray<string, ObjPath>()
+  const cycleNodes = new MapArray<string, JsonPath>()
 
-  const hook: CrawlHook<CloneState<DereferenceState>> = async (value, ctx) => {
+  const hook: CloneHook<DereferenceState> = async (value, ctx) => {
     const { path, state } = ctx
     const key = path.length ? ctx.key : "#"
     const { node, root } = state
@@ -175,7 +173,9 @@ export const dereference = async (basePath: string, resolver: Resolver, options:
   const base = await refResolver.base(baseRef.pointer)
 
   return clone(base, dereferenceHook(baseRef.filePath, refResolver, options), { 
-    refNodes: [{ ref: basePath, pointer: "" }],
-    baseFile: basePath, 
+    state: {
+      refNodes: [{ ref: basePath, pointer: "" }],
+      baseFile: basePath, 
+    }
   })
 }

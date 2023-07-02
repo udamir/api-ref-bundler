@@ -1,65 +1,65 @@
+import { DefinitionPointer, RefMapRules } from "../types"
 import { schemaRefMap } from "./jsonSchema"
-import { RefMapRule, RefMapRules } from "../types"
 
 type AsyncApiComponents = "schemas" | "servers" | "serverVariables" | "channels" | "messages" | "securitySchemes" | "parameters" | "correlationIds" | "operationTraits" | "messageTraits" | "serverBindings" | "channelBindings" | "operationBindings" | "messageBindings"
 
-const asyncApiRefRule: Record<AsyncApiComponents, RefMapRule> = {
-  schemas: "#/components/schemas",
-  servers: "#/components/servers",
-  serverVariables: "#/components/serverVariables",
-  channels: "#/components/channels",
-  messages: "#/components/messages",
-  securitySchemes: "#/components/securitySchemes",
-  parameters: "#/components/parameters",
-  correlationIds: "#/components/correlationIds",
-  operationTraits: "#/components/operationTraits",
-  messageTraits: "#/components/messageTraits",
-  serverBindings: "#/components/serverBindings",
-  channelBindings: "#/components/channelBindings",
-  operationBindings: "#/components/operationBindings",
-  messageBindings: "#/components/messageBindings",
+const asyncApiDefPaths: Record<AsyncApiComponents, DefinitionPointer> = {
+  schemas: "/components/schemas",
+  servers: "/components/servers",
+  serverVariables: "/components/serverVariables",
+  channels: "/components/channels",
+  messages: "/components/messages",
+  securitySchemes: "/components/securitySchemes",
+  parameters: "/components/parameters",
+  correlationIds: "/components/correlationIds",
+  operationTraits: "/components/operationTraits",
+  messageTraits: "/components/messageTraits",
+  serverBindings: "/components/serverBindings",
+  channelBindings: "/components/channelBindings",
+  operationBindings: "/components/operationBindings",
+  messageBindings: "/components/messageBindings",
 } as const
 
 const parametersRefMap: RefMapRules = {
   "/*": {
-    "/": asyncApiRefRule.parameters,
-    "/schema": schemaRefMap(asyncApiRefRule.schemas)
+    "#": asyncApiDefPaths.parameters,
+    "/schema": schemaRefMap(asyncApiDefPaths.schemas)
   }
 }
 
-const serversRefMap = {
+const serversRefMap: RefMapRules = {
   "/*": {
-    "/": asyncApiRefRule.servers,
+    "#": asyncApiDefPaths.servers,
     "/variables": {
-      "/*": asyncApiRefRule.serverVariables
+      "/*": { "#": asyncApiDefPaths.serverVariables }
     },
-    "/bindings": asyncApiRefRule.serverBindings
+    "/bindings": { "#": asyncApiDefPaths.serverBindings }
   }
 }
 
 const operationTraitsRefMap: RefMapRules = {
   "/*": {
-    "/": asyncApiRefRule.operationTraits,
-    "/bindings": asyncApiRefRule.operationBindings
+    "#": asyncApiDefPaths.operationTraits,
+    "/bindings": { "#": asyncApiDefPaths.operationBindings }
   }
 }
 
 const messageTraitsRefMap: RefMapRules = {
   "/*": {
-    "/": asyncApiRefRule.messageTraits,
-    "/headers": schemaRefMap(asyncApiRefRule.schemas),
-    "/correlationId": asyncApiRefRule.correlationIds,
-    "/bindings": asyncApiRefRule.messageBindings,
+    "#": asyncApiDefPaths.messageTraits,
+    "/headers": schemaRefMap(asyncApiDefPaths.schemas),
+    "/correlationId": { "#": asyncApiDefPaths.correlationIds },
+    "/bindings": { "#": asyncApiDefPaths.messageBindings },
   }
 }
 
 const messageRefMap: RefMapRules = {
-  "/": asyncApiRefRule.messages,
-  "/headers": schemaRefMap(asyncApiRefRule.schemas),
-  "/correlationId": asyncApiRefRule.correlationIds,
+  "#": asyncApiDefPaths.messages,
+  "/headers": schemaRefMap(asyncApiDefPaths.schemas),
+  "/correlationId": { "#": asyncApiDefPaths.correlationIds },
   "/traits": messageTraitsRefMap,
-  "/payload": schemaRefMap(asyncApiRefRule.schemas),
-  "/bindings": asyncApiRefRule.messageBindings,
+  "/payload": schemaRefMap(asyncApiDefPaths.schemas),
+  "/bindings": { "#": asyncApiDefPaths.messageBindings },
 }
 
 const operationRefMap: RefMapRules = {
@@ -70,13 +70,13 @@ const operationRefMap: RefMapRules = {
       "/*": messageRefMap
     }
   },
-  "/bindings": asyncApiRefRule.operationBindings,
+  "/bindings": { "#": asyncApiDefPaths.operationBindings },
 }
 
 const channelsRefMap: RefMapRules = {
   "/*": {
-    "/": asyncApiRefRule.channels,
-    "/bindings": asyncApiRefRule.channelBindings,
+    "#": asyncApiDefPaths.channels,
+    "/bindings": { "#": asyncApiDefPaths.channelBindings },
     "/subscribe": operationRefMap,
     "/publish": operationRefMap,
     "/parameters": parametersRefMap,
@@ -88,11 +88,11 @@ export const asyncApiRefMap: RefMapRules = {
   "/channels": channelsRefMap,
   "/components": {
     "/schemas": {
-      "/*": () => schemaRefMap(asyncApiRefRule.schemas)
+      "/*": () => schemaRefMap(asyncApiDefPaths.schemas)
     },
     "/servers": serversRefMap,
     "/serverVariables": {
-      "/*": asyncApiRefRule.serverVariables
+      "/*": { "#": asyncApiDefPaths.serverVariables }
     },
     "/channels": channelsRefMap,
     "/messages": {
@@ -100,24 +100,24 @@ export const asyncApiRefMap: RefMapRules = {
     },
     "/parameters": parametersRefMap,
     "/correlationIds": {
-      "/*": asyncApiRefRule.correlationIds
+      "/*": { "#": asyncApiDefPaths.correlationIds }
     },
     "/operationTraits": operationTraitsRefMap,
     "/messageTraits": messageTraitsRefMap,
     "/securitySchemes": {
-      "/*": asyncApiRefRule.securitySchemes
+      "/*": { "#": asyncApiDefPaths.securitySchemes }
     },
     "/serverBindings": {
-      "/*": asyncApiRefRule.serverBindings
+      "/*": { "#": asyncApiDefPaths.serverBindings }
     },
     "/channelBindings": {
-      "/*": asyncApiRefRule.channelBindings
+      "/*": { "#": asyncApiDefPaths.channelBindings }
     },
     "/operationBindings": {
-      "/*": asyncApiRefRule.operationBindings,
+      "/*": { "#": asyncApiDefPaths.operationBindings }
     },
     "/messageBindings": {
-      "/*": asyncApiRefRule.messageBindings,
+      "/*": { "#": asyncApiDefPaths.messageBindings }
     }
   }
 }
