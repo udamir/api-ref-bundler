@@ -2707,10 +2707,10 @@ jsesc@^2.5.1:
   resolved "https://registry.yarnpkg.com/jsesc/-/jsesc-2.5.2.tgz#80564d2e483dacf6e8ef209650a67df3f0c283a4"
   integrity sha512-OYu7XEzjkCQ3C5Ps3QIZsQfNpqoJyZZA99wd9aWd05NCtC5pWOkShK2mkL6HXQR6/Cy2lbNdPlZBpuQHXE63gA==
 
-json-crawl@0.2.4:
-  version "0.2.4"
-  resolved "https://registry.yarnpkg.com/json-crawl/-/json-crawl-0.2.4.tgz#d7ee13b26be38bc8db10f6b437c98db65ecff69a"
-  integrity sha512-e0SwECDgKGmhshfd7kAivickCENu8hx8RH03i/7O5v4mhY/P77VIOcSWwAh+9j0wkPktEzon3hx9fAcOrv0DKA==
+json-crawl@0.2.5:
+  version "0.2.5"
+  resolved "https://registry.yarnpkg.com/json-crawl/-/json-crawl-0.2.5.tgz#27f6b184903aaea0f3253f7f7bc6981eb02c6b2f"
+  integrity sha512-Ni1DIJfpG58sgi7KP5WzP1F88pLc93uOb/CUX285YOw9P98epH0OMuSPCBxPGkdnpJx3z9J+wmosJkAxtdw84A==
 
 json-parse-even-better-errors@^2.3.0:
   version "2.3.1"

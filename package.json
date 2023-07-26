@@ -72,6 +72,6 @@
     "collectCoverage": true
   },
   "dependencies": {
-    "json-crawl": "0.2.4"
+    "json-crawl": "0.2.5"
   }
 }
