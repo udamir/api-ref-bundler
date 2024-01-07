@@ -10,14 +10,14 @@ describe("Basic tests", () => {
   
   describe("Schema with a top-level (root) $ref", () => {
     it("should dereference successfully", async () => {
-      const schema = await dereference("specs/root/root.yaml", resolver);
+      const schema: any = await dereference("specs/root/root.yaml", resolver);
       expect(schema).toMatchObject(root.dereferenced)
       // Reference equality
       expect(schema.properties.first).toEqual(schema.properties.last);
     })
 
     it("should parallel dereference successfully", async () => {
-      const schema = await dereference("specs/root/root.yaml", resolver, { parallelCrawl: true });
+      const schema: any = await dereference("specs/root/root.yaml", resolver, { parallelCrawl: true });
       expect(schema).toMatchObject(root.dereferenced)
       // Reference equality
       expect(schema.properties.first).toEqual(schema.properties.last);
@@ -49,7 +49,7 @@ describe("Basic tests", () => {
   describe("When executed in the context of root directory", () => {
 
     it("should dereference successfully", async () => {
-      const schema = await dereference("specs/absolute-root/absolute-root.yaml", resolver)
+      const schema: any = await dereference("specs/absolute-root/absolute-root.yaml", resolver)
   
       expect(schema).toMatchObject(absoluteRoot.dereferenced)
       expect(schema.properties.name).toEqual(schema.definitions.name)
@@ -65,7 +65,7 @@ describe("Basic tests", () => {
   describe("$refs that are substrings of each other", () => {
 
     it("should dereference successfully", async () => {
-      const schema = await dereference("specs/substrings/substrings.yaml", resolver)
+      const schema: any = await dereference("specs/substrings/substrings.yaml", resolver)
       expect(schema).toMatchObject(substrings.dereferenced);
       // Reference equality
       expect(schema.properties.firstName).toEqual(schema.definitions.name);

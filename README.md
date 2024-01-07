@@ -1,5 +1,5 @@
 # api-ref-bundler
-<img alt="npm" src="https://img.shields.io/npm/v/api-ref-bundler"> <img alt="npm" src="https://img.shields.io/npm/dm/api-ref-bundler?label=npm"> <img alt="npm type definitions" src="https://img.shields.io/npm/types/api-ref-bundler"> <img alt="GitHub" src="https://img.shields.io/github/license/udamir/api-ref-bundler">
+<img alt="npm" src="https://img.shields.io/npm/v/api-ref-bundler"> <img alt="npm" src="https://img.shields.io/npm/dm/api-ref-bundler?label=npm"> ![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/udamir/api-ref-bundler/node.js.yml) <img alt="npm type definitions" src="https://img.shields.io/npm/types/api-ref-bundler"> <img alt="GitHub" src="https://img.shields.io/github/license/udamir/api-ref-bundler">
 
 This package provides utils to resolve all external/internal references in Json based API document and bundle/dereference into single document
 
@@ -9,6 +9,7 @@ This package provides utils to resolve all external/internal references in Json 
 - [Swagger 2.x](https://github.com/swagger-api/swagger-spec/blob/master/versions/2.0.md)
 - [OpenApi 3.x](https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md)
 - [AsyncApi 2.x](https://www.asyncapi.com/docs/specifications/v2.4.0)
+- ~~[AsyncApi 3.x](https://www.asyncapi.com/docs/reference/specification/v3.0.0)~~ (roadmap)
 
 ## Features
 - bundle all external refs in signle document

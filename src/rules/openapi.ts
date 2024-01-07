@@ -16,7 +16,7 @@ const openApiRefRule: Record<OpenApiComponents, DefinitionPointer> = {
 } as const
 
 const examplesRefMap: RefMapRules = {
-   "/*": { "#": openApiRefRule.examples },
+  "/*": { "#": openApiRefRule.examples },
 }
 
 const parametersRefMap: RefMapRules = {

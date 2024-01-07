@@ -25,13 +25,13 @@ export interface BundleOptions {
     onCrawl?: (value: any, ctx: BundleContext) => void      // node crawl hook
     onExit?: (value: any, ctx: BundleContext) => void       // node crawl exit hook
   }
+  rules?: RefMapRules
 }
 
 export const bundle = async (baseFile: string, resolver: Resolver, options: BundleOptions = {}) => {
   const refResolver = new RefResolver(baseFile, resolver)
 
   const base = await refResolver.base()
-  const type = calcJsonType(base)
 
   const basePath = createRef(normalize(baseFile))
 
@@ -40,10 +40,10 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
   const newDefs = new Map<string, boolean>()
   const { hooks, ignoreSibling } = options
 
-  const hook: CloneHook<BundleState, RefMapRules> = async (value, ctx) => {
+  const hook: CloneHook<BundleState, RefMapRules> = async (ctx) => {
+    const { value, path, state } = ctx
     hooks?.onCrawl && hooks?.onCrawl(value, ctx)
 
-    const { path, state } = ctx
     const key = path.length ? ctx.key : "#"
     const fullPath = [ ...state.path, ...path ]
     const currentPointer = buildPointer(fullPath)
@@ -52,12 +52,14 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
 
     // if current definition is alrady added to definitions then skip
     if (newDefs.has(currentPointer)) {
-      if (newDefs.get(currentPointer)) { return null }
+      if (newDefs.get(currentPointer)) { 
+        return { done: true } 
+      }
       newDefs.set(currentPointer, true)
     }
     
     if (!isObject(value) || !value.hasOwnProperty("$ref") || typeof value.$ref !== "string") {
-      return { value, state }
+      return
     }
 
     const exitHook = () => {
@@ -71,13 +73,13 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
 
     if (filePath === basePath) {
       // resolve internal reference
-      return { value: { $ref: createRef("", pointer), ...rest }, state, exitHook }
+      return { value: { $ref: createRef("", pointer), ...rest }, exitHook }
     } else if (defLinks.has(normalized)) {
       // check if ref already added to root definitions
-      return { value: { $ref: defLinks.get(normalized), ...rest }, state, exitHook }
+      return { value: { $ref: defLinks.get(normalized), ...rest }, exitHook }
     } else if (defLinks.has(filePath) && !/\/(definitions|defs)/g.test(pointer)) {
       // check if filepath already added to root definitions
-      return { value: { $ref: defLinks.get(filePath) + pointer, ...rest }, state, exitHook }
+      return { value: { $ref: defLinks.get(filePath) + pointer, ...rest }, exitHook }
     } else {
       // resolve source
       const resolvedPointer = await refResolver.resolvePointer(pointer, filePath)
@@ -85,12 +87,12 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
       if (!resolvedPointer.value) {
         hooks?.onError && hooks.onError(`Cannot resolve: ${normalized}`, ctx)
 
-        return { value: { $ref: normalized }, state, exitHook }
+        return { value: { $ref: normalized }, exitHook }
       }
 
       // reference to text file
       if (typeof resolvedPointer.value === "string") {
-        return { value: resolvedPointer.value, state: state, exitHook }
+        return { value: resolvedPointer.value, exitHook }
       }
 
       const defPointer = ctx.rules && "#" in ctx.rules ? ctx.rules["#"] : undefined
@@ -116,7 +118,7 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
 
         // double check if ref already added to root definitions
         if (defLinks.has(normalized)) {
-          return { value: { $ref: defLinks.get(normalized), ...rest }, state, exitHook }
+          return { value: { $ref: defLinks.get(normalized), ...rest }, exitHook }
         }
 
         defPath.push(defName)
@@ -145,10 +147,10 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
         }
         if (getValueByPath(rootDefs, defPath)) {
           if (_defPointer === currentPointer) {
-            return null
+            return { done: true }
           }
   
-          return { value: { $ref: "#" + _defPointer, ...rest }, state, exitHook }
+          return { value: { $ref: "#" + _defPointer, ...rest }, exitHook }
         }
       }
 
@@ -165,7 +167,7 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
           baseFile: resolvedPointer.filePath,
           path: fullPath
         },
-        rules: ctx.rules as RefMapRules
+        rules: ctx.rules
       })
 
       const _exitHook = () => {
@@ -173,7 +175,7 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
         exitHook()
       }
        
-      return { value: ignoreSibling ? {} : rest, state, exitHook: _exitHook }
+      return { value: ignoreSibling ? {} : rest, exitHook: _exitHook }
     }
   }
 
@@ -183,7 +185,7 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
       baseFile: basePath, 
       path: [],
     },
-    rules: refMapRules[calcJsonType(base)]
+    rules: options.rules ?? refMapRules[calcJsonType(base)]
   })
   return mergeValues(result, rootDefs)
 }

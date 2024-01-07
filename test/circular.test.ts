@@ -23,7 +23,7 @@ describe("Schema with circular $refs that extend each other", () => {
 
   describe("$ref to ancestor", () => {
     it('should dereference successfully circular $refs if "enableCircular" is true', async () => {
-      const schema = await dereference("specs/circular-extended/circular-extended-ancestor.yaml", resolver, { enableCircular: true })
+      const schema: any = await dereference("specs/circular-extended/circular-extended-ancestor.yaml", resolver, { enableCircular: true })
       // Reference equality
       expect(schema.definitions.person.properties.spouse.properties)
         .toMatchObject(schema.definitions.person.properties);
@@ -45,7 +45,7 @@ describe("Schema with circular $refs that extend each other", () => {
   describe("indirect circular $refs", () => {
 
     it('should dereference successfully circular $refs if "enableCircular" is true', async () => {
-      const schema = await dereference("specs/circular-extended/circular-extended-indirect.yaml", resolver, { enableCircular: true })
+      const schema: any = await dereference("specs/circular-extended/circular-extended-indirect.yaml", resolver, { enableCircular: true })
       // Reference equality
       expect(schema.definitions.parent.properties.children.items.properties)
         .toMatchObject(schema.definitions.child.properties);
@@ -57,7 +57,7 @@ describe("Schema with circular $refs that extend each other", () => {
 
     it('should dereference successfully and ignore circular $refs', async () => {
       const schema = await dereference("specs/circular-extended/circular-extended-indirect.yaml", resolver);
-      expect(schema).toMatchObject(circularExtended.dereferenced.indirect);
+      expect(schema). toMatchObject(circularExtended.dereferenced.indirect);
     });
 
     it("should bundle successfully", async () => {
@@ -70,7 +70,7 @@ describe("Schema with circular $refs that extend each other", () => {
   describe("indirect circular and ancestor $refs", () => {
 
     it('should dereference successfully circular $refs if "enableCircular" is true', async () => {
-      const schema = await dereference("specs/circular-extended/circular-extended-indirect-ancestor.yaml", resolver, { enableCircular: true })
+      const schema: any = await dereference("specs/circular-extended/circular-extended-indirect-ancestor.yaml", resolver, { enableCircular: true })
       // Reference equality
       expect(schema.definitions.parent.properties.child.properties.children.items.properties.children.items)
         .toMatchObject(schema.definitions.parent.properties.child.properties.children.items);
