@@ -1,6 +1,6 @@
 {
   "name": "api-ref-bundler",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "Bundle all external $ref in Json based API document into single document",
   "module": "dist/index.mjs",
   "main": "dist/index.cjs",
