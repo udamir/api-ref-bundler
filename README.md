@@ -99,11 +99,10 @@ interface DereferenceOptions {
 
 A browser version of `api-ref-bundler` is also available via CDN:
 ```html
-<script src="https://cdn.jsdelivr.net/npm/api-ref-bundler@latest/browser/api-ref-bundler.es.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/api-ref-bundler@latest/browser/api-ref-bundler.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/api-ref-bundler@latest"></script>
 ```
 
-Reference `api-ref-bundler.min.js` in your HTML and use the global variable `ApiRefBundler`.
+Reference `api-ref-bundler` in your HTML and use the global variable `ApiRefBundler`.
 ```HTML
 <script>
   const resolver = async (sourcePath) => {

@@ -6,33 +6,33 @@
   <title>Document</title>
 </head>
 <body>
-  <script src="../browser/api-ref-bundler.umd.js"></script>
+  <script src="../dist/index.iife.js"></script>
   <textarea id="bar" title="bar" style="width: 24.5%; height: 99%;"></textarea>
   <textarea id="foo" title="foo" style="width: 24.5%; height: 99%;"></textarea>
   <textarea id="baz" title="baz" style="width: 24.5%; height: 99%;"></textarea>
   <textarea id="result" title="result" style="width: 25%; height: 99%;"></textarea>
   <script>
-    var bundler = ApiRefBundler.create("bar.json", async (sourcePath) => {
-      const data = await fetch("/test/resources/" + sourcePath)
-      return sourcePath.slice(-3) === ".md" ? data.text() : data.json()
-    })
 
-    fetch("/test/resources/bar.json").then(async (data) => {
+
+    fetch("./specs/circular-schema/bar.json").then(async (data) => {
       const result = document.getElementById('bar');
       result.innerHTML = "bar.json \n" + await data.text()
     })
     
-    fetch("/test/resources/xyz/baz.json").then(async (data) => {
+    fetch("./specs/circular-schema/xyz/baz.json").then(async (data) => {
       const result = document.getElementById('baz');
       result.innerHTML = "xyz/baz.json \n" + await data.text()
     })
 
-    fetch("/test/resources/foo.json").then(async (data) => {
+    fetch("./specs/circular-schema/foo.json").then(async (data) => {
       const result = document.getElementById('foo');
       result.innerHTML = "foo.json \n" + await data.text()
     })
 
-    bundler.run().then(schema => {
+    ApiRefBundler.bundle("bar.json", async (sourcePath) => {
+      const data = await fetch("./specs/circular-schema/" + sourcePath)
+      return sourcePath.slice(-3) === ".md" ? data.text() : data.json()
+    }).then(schema => {
       const result = document.getElementById('result');
       result.innerHTML = "bar.json (resolved) \n" + JSON.stringify(schema, null, 2);
     }).catch(errors => {
