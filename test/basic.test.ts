@@ -77,7 +77,27 @@ describe("Basic tests", () => {
       const schema = await bundle("specs/substrings/substrings.yaml", resolver);
       expect(schema).toMatchObject(substrings.bundled);
     })
-  
+
   })
-  
+
+  describe("AsyncAPI channel message references", () => {
+
+    it("should not rewrite AsyncAPI v3 operation message references to components", async () => {
+      const schema = await bundle("specs/asyncapi3-channel-messages/asyncapi.yaml", resolver)
+
+      expect(schema.components?.channels?.userSignedUp?.subscribe?.message).toEqual({
+        $ref: "#/components/channels/userSignedUp/messages/userSignedUpMessage"
+      })
+    })
+
+    it("should continue rewriting AsyncAPI v2 operation message references to components", async () => {
+      const schema = await bundle("specs/asyncapi2-channel-messages/asyncapi.yaml", resolver)
+
+      expect(schema.components?.channels?.userSignedUp?.subscribe?.message).toEqual({
+        $ref: "#/components/messages/userSignedUpMessage"
+      })
+    })
+
+  })
+
 })

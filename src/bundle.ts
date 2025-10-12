@@ -34,6 +34,7 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
   const base = await refResolver.base()
 
   const basePath = createRef(normalize(baseFile))
+  const jsonType = calcJsonType(base)
 
   const rootDefs: any = {}
   const defLinks = new Map<string, string>()
@@ -74,7 +75,25 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
     if (filePath === basePath) {
       // resolve internal reference
       return { value: { $ref: createRef("", pointer), ...rest }, exitHook }
-    } else if (defLinks.has(normalized)) {
+    }
+
+    // Handle AsyncApi3
+    if (jsonType === "AsyncApi3" && pointer.startsWith("/channels/")) {
+      const messageIndex = pointer.indexOf("/messages/")
+
+      if (messageIndex !== -1) {
+        const channelPointer = pointer.slice(0, messageIndex)
+        const suffix = pointer.slice(messageIndex)
+        const parentRef = createRef(filePath, channelPointer)
+
+        if (defLinks.has(parentRef)) {
+          const target = defLinks.get(parentRef)
+          return { value: { $ref: `${target}${suffix}`, ...rest }, exitHook }
+        }
+      }
+    }
+
+    if (defLinks.has(normalized)) {
       // check if ref already added to root definitions
       return { value: { $ref: defLinks.get(normalized), ...rest }, exitHook }
     } else if (defLinks.has(filePath) && !/\/(definitions|defs)/g.test(pointer)) {
@@ -182,10 +201,10 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
   const result = await clone(base, hook, { 
     state: {
       refNodes: [ { ref: basePath, pointer: "" }],
-      baseFile: basePath, 
+      baseFile: basePath,
       path: [],
     },
-    rules: options.rules ?? refMapRules[calcJsonType(base)]
+    rules: options.rules ?? refMapRules[jsonType]
   })
   return mergeValues(result, rootDefs)
 }

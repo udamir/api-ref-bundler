@@ -1,0 +1,14 @@
+channels:
+  userSignedUp:
+    messages:
+      userSignedUpMessage:
+        name: userSignedUpMessage
+        title: User Signed Up Message
+        payload:
+          type: object
+          properties:
+            userId:
+              type: string
+    subscribe:
+      message:
+        $ref: '#/channels/userSignedUp/messages/userSignedUpMessage'
