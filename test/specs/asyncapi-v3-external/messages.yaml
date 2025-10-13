@@ -1,0 +1,4 @@
+GenericTextMessage:
+  payload:
+    $ref: './schemas.yaml#/TextPayload'
+

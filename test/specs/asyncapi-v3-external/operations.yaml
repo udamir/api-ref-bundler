@@ -1,0 +1,14 @@
+SendText:
+  action: send
+  channel:
+    $ref: './channels.yaml#/SpeakChannel'
+  messages:
+    - $ref: './channels.yaml#/SpeakChannel/messages/TextInput'
+
+ReceiveAudio:
+  action: receive
+  channel:
+    $ref: './channels.yaml#/SpeakChannel'
+  messages:
+    - $ref: './channels.yaml#/SpeakChannel/messages/AudioOutput'
+

@@ -1,0 +1,25 @@
+asyncapi: 3.0.0
+
+info:
+  title: AsyncAPI v3 External Refs Test
+  version: 1.0.0
+
+components:
+  schemas:
+    TextPayload:
+      $ref: './schemas.yaml#/TextPayload'
+  
+  messages:
+    GenericTextMessage:
+      $ref: './messages.yaml#/GenericTextMessage'
+
+channels:
+  SpeakChannel:
+    $ref: './channels.yaml#/SpeakChannel'
+
+operations:
+  SendText:
+    $ref: './operations.yaml#/SendText'
+  ReceiveAudio:
+    $ref: './operations.yaml#/ReceiveAudio'
+

@@ -1,6 +1,6 @@
 import { JsonPath, CrawlContext, CloneHook, CloneState, clone, isObject } from "json-crawl"
- 
-import { 
+
+import {
   buildPointer, createRef, calcJsonType, filename, getValueByPath,
   mergeValues, parseRef, setValueByPath, parsePointer
 } from "./utils"
@@ -45,19 +45,19 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
     hooks?.onCrawl && hooks?.onCrawl(value, ctx)
 
     const key = path.length ? ctx.key : "#"
-    const fullPath = [ ...state.path, ...path ]
+    const fullPath = [...state.path, ...path]
     const currentPointer = buildPointer(fullPath)
 
     // console.debug(state.baseFile, currentPointer)
 
     // if current definition is alrady added to definitions then skip
     if (newDefs.has(currentPointer)) {
-      if (newDefs.get(currentPointer)) { 
-        return { done: true } 
+      if (newDefs.get(currentPointer)) {
+        return { done: true }
       }
       newDefs.set(currentPointer, true)
     }
-    
+
     if (!isObject(value) || !value.hasOwnProperty("$ref") || typeof value.$ref !== "string") {
       return
     }
@@ -81,6 +81,14 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
       // check if filepath already added to root definitions
       return { value: { $ref: defLinks.get(filePath) + pointer, ...rest }, exitHook }
     } else {
+      // Check for prefix matches to support nested references
+      for (const [cachedRef, cachedLocation] of defLinks.entries()) {
+        if (normalized.startsWith(cachedRef + '/')) {
+          const suffix = normalized.substring(cachedRef.length)
+          return { value: { $ref: cachedLocation + suffix, ...rest }, exitHook }
+        }
+      }
+
       // resolve source
       const resolvedPointer = await refResolver.resolvePointer(pointer, filePath)
 
@@ -98,7 +106,7 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
       const defPointer = ctx.rules && "#" in ctx.rules ? ctx.rules["#"] : undefined
       if (defPointer) {
         const defPath = parsePointer(defPointer)
-    
+
         const { $defs, definitions, ...jsonSchema } = resolvedPointer.value
 
         const pathDefs = getValueByPath(rootDefs, defPath) || {}
@@ -127,7 +135,7 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
         defLinks.set(normalized, "#" + _defPointer)
         newDefs.set(_defPointer, false)
 
-        const _ref = { 
+        const _ref = {
           ref: createRef(filePath, pointer),
           pointer: _defPointer
         }
@@ -136,7 +144,7 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
           state: {
             baseFile: resolvedPointer.filePath,
             path: defPath,
-            refNodes: [ ...state.refNodes, _ref ],
+            refNodes: [...state.refNodes, _ref],
             defPrefix: defName + "-"
           },
           rules: ctx.rules as RefMapRules
@@ -149,21 +157,21 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
           if (_defPointer === currentPointer) {
             return { done: true }
           }
-  
+
           return { value: { $ref: "#" + _defPointer, ...rest }, exitHook }
         }
       }
 
       defLinks.set(normalized, "#" + currentPointer)
-      
-      const _ref = { 
+
+      const _ref = {
         ref: createRef(filePath, pointer),
         pointer: buildPointer(fullPath)
       }
-      
+
       const data = await clone(resolvedPointer.value, hook, {
         state: {
-          refNodes: [ ...state.refNodes, _ref ],
+          refNodes: [...state.refNodes, _ref],
           baseFile: resolvedPointer.filePath,
           path: fullPath
         },
@@ -174,15 +182,15 @@ export const bundle = async (baseFile: string, resolver: Resolver, options: Bund
         ctx.state.node[key] = (!isObject(data) || ignoreSibling) ? data : mergeValues(data, ctx.state.node[key])
         exitHook()
       }
-       
+
       return { value: ignoreSibling ? {} : rest, exitHook: _exitHook }
     }
   }
 
-  const result = await clone(base, hook, { 
+  const result = await clone(base, hook, {
     state: {
-      refNodes: [ { ref: basePath, pointer: "" }],
-      baseFile: basePath, 
+      refNodes: [{ ref: basePath, pointer: "" }],
+      baseFile: basePath,
       path: [],
     },
     rules: options.rules ?? refMapRules[calcJsonType(base)]
@@ -200,8 +208,8 @@ const uniqueDefinitionName = (defs: any, name: string, i = 0): string => {
 const findDefinitionName = (defs: any, ref: string, basePath: string) => {
   for (const key of Object.keys(defs)) {
     const def = defs[key]
-    if (!def.$ref || Object.keys(def).length > 1 ) { continue }
+    if (!def.$ref || Object.keys(def).length > 1) { continue }
     if (ref === parseRef(def.$ref, basePath).normalized) { return key }
   }
-  return 
+  return
 }
