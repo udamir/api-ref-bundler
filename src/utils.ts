@@ -37,6 +37,7 @@ export const calcJsonType = (data: any): JsonType => {
 
   if (/3.+/.test(data?.openapi || "")) return "OpenApi3"
   if (/2.+/.test(data?.swagger || "")) return "OpenApi2"
+  if (/3.+/.test(data?.asyncapi || "")) return "AsyncApi3"
   if (/2.+/.test(data?.asyncapi || "")) return "AsyncApi2"
   if (isJsonSchema(data)) return "JsonSchema"
   return "unknown"
