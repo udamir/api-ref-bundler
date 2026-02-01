@@ -1,0 +1,15 @@
+# External schemas file B
+# Contains User schema with different structure
+
+User:
+  type: object
+  description: User from file B (seller)
+  properties:
+    id:
+      type: string
+    sellerName:
+      type: string
+    sellerRating:
+      type: number
+    verified:
+      type: boolean

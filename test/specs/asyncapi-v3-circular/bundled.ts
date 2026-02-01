@@ -1,0 +1,121 @@
+// Expected output after bundle() - internal refs remain as $refs
+export default {
+  asyncapi: '3.0.0',
+  info: {
+    title: 'AsyncAPI v3 Circular Schema Test',
+    version: '1.0.0',
+    description: 'Tests circular $ref handling in AsyncAPI v3'
+  },
+  channels: {
+    UserChannel: {
+      address: '/users/{userId}',
+      messages: {
+        UserMessage: {
+          payload: {
+            $ref: '#/components/schemas/User'
+          }
+        }
+      }
+    }
+  },
+  operations: {
+    GetUser: {
+      action: 'receive',
+      channel: {
+        $ref: '#/channels/UserChannel'
+      },
+      messages: [
+        { $ref: '#/channels/UserChannel/messages/UserMessage' }
+      ]
+    }
+  },
+  components: {
+    schemas: {
+      User: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string'
+          },
+          name: {
+            type: 'string'
+          },
+          friend: {
+            $ref: '#/components/schemas/User'
+          },
+          orders: {
+            type: 'array',
+            items: {
+              $ref: '#/components/schemas/Order'
+            }
+          }
+        }
+      },
+      Order: {
+        type: 'object',
+        properties: {
+          orderId: {
+            type: 'string'
+          },
+          amount: {
+            type: 'number'
+          },
+          customer: {
+            $ref: '#/components/schemas/User'
+          },
+          items: {
+            type: 'array',
+            items: {
+              $ref: '#/components/schemas/OrderItem'
+            }
+          }
+        }
+      },
+      OrderItem: {
+        type: 'object',
+        properties: {
+          productId: {
+            type: 'string'
+          },
+          quantity: {
+            type: 'integer'
+          },
+          product: {
+            $ref: '#/components/schemas/Product'
+          }
+        }
+      },
+      Product: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string'
+          },
+          name: {
+            type: 'string'
+          },
+          reviews: {
+            type: 'array',
+            items: {
+              $ref: '#/components/schemas/Review'
+            }
+          }
+        }
+      },
+      Review: {
+        type: 'object',
+        properties: {
+          rating: {
+            type: 'integer'
+          },
+          comment: {
+            type: 'string'
+          },
+          reviewer: {
+            $ref: '#/components/schemas/User'
+          }
+        }
+      }
+    }
+  }
+}

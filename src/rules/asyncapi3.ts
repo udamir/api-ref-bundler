@@ -1,4 +1,4 @@
-import { DefinitionPointer, RefMapRules } from "../types"
+import type { DefinitionPointer, RefMapRules } from "../types"
 import { schemaRefMap } from "./jsonSchema"
 
 /**
@@ -10,7 +10,12 @@ import { schemaRefMap } from "./jsonSchema"
  * - Root-level channels and operations are not hoisted to components
  */
 
-type AsyncApi3Components = "schemas" | "servers" | "channels" | "operations" | "messages" | "securitySchemes" | "serverVariables" | "parameters" | "correlationIds" | "replies" | "replyAddresses" | "externalDocs" | "tags"
+type AsyncApi3Components =
+  | "schemas" | "servers" | "channels" | "operations" | "messages"
+  | "securitySchemes" | "serverVariables" | "parameters" | "correlationIds"
+  | "replies" | "replyAddresses" | "externalDocs" | "tags"
+  | "operationTraits" | "messageTraits"
+  | "serverBindings" | "channelBindings" | "operationBindings" | "messageBindings"
 
 const asyncApi3DefPaths: Record<AsyncApi3Components, DefinitionPointer> = {
   schemas: "/components/schemas",
@@ -26,6 +31,12 @@ const asyncApi3DefPaths: Record<AsyncApi3Components, DefinitionPointer> = {
   replyAddresses: "/components/replyAddresses",
   externalDocs: "/components/externalDocs",
   tags: "/components/tags",
+  operationTraits: "/components/operationTraits",
+  messageTraits: "/components/messageTraits",
+  serverBindings: "/components/serverBindings",
+  channelBindings: "/components/channelBindings",
+  operationBindings: "/components/operationBindings",
+  messageBindings: "/components/messageBindings",
 } as const
 
 const parametersRefMap: RefMapRules = {
@@ -40,7 +51,15 @@ const serversRefMap: RefMapRules = {
     "#": asyncApi3DefPaths.servers,
     "/variables": {
       "/*": { "#": asyncApi3DefPaths.serverVariables }
-    }
+    },
+    "/security": {
+      "/*": { "#": asyncApi3DefPaths.securitySchemes }
+    },
+    "/tags": {
+      "/*": { "#": asyncApi3DefPaths.tags }
+    },
+    "/externalDocs": { "#": asyncApi3DefPaths.externalDocs },
+    "/bindings": { "#": asyncApi3DefPaths.serverBindings }
   }
 }
 
@@ -48,6 +67,10 @@ const channelMessageRefMap: RefMapRules = {
   "/headers": schemaRefMap(asyncApi3DefPaths.schemas),
   "/correlationId": { "#": asyncApi3DefPaths.correlationIds },
   "/payload": schemaRefMap(asyncApi3DefPaths.schemas),
+  "/traits": {
+    "/*": { "#": asyncApi3DefPaths.messageTraits }
+  },
+  "/bindings": { "#": asyncApi3DefPaths.messageBindings }
 }
 
 const rootChannelsRefMap: RefMapRules = {
@@ -58,7 +81,12 @@ const rootChannelsRefMap: RefMapRules = {
     "/parameters": parametersRefMap,
     "/messages": {
       "/*": channelMessageRefMap
-    }
+    },
+    "/tags": {
+      "/*": { "#": asyncApi3DefPaths.tags }
+    },
+    "/externalDocs": { "#": asyncApi3DefPaths.externalDocs },
+    "/bindings": { "#": asyncApi3DefPaths.channelBindings }
   }
 }
 
@@ -71,7 +99,12 @@ const componentChannelsRefMap: RefMapRules = {
     "/parameters": parametersRefMap,
     "/messages": {
       "/*": channelMessageRefMap
-    }
+    },
+    "/tags": {
+      "/*": { "#": asyncApi3DefPaths.tags }
+    },
+    "/externalDocs": { "#": asyncApi3DefPaths.externalDocs },
+    "/bindings": { "#": asyncApi3DefPaths.channelBindings }
   }
 }
 
@@ -85,8 +118,20 @@ const rootOperationsRefMap: RefMapRules = {
       "/channel": {},
       "/messages": {
         "/*": {}
-      }
-    }
+      },
+      "/address": { "#": asyncApi3DefPaths.replyAddresses }
+    },
+    "/security": {
+      "/*": { "#": asyncApi3DefPaths.securitySchemes }
+    },
+    "/traits": {
+      "/*": { "#": asyncApi3DefPaths.operationTraits }
+    },
+    "/tags": {
+      "/*": { "#": asyncApi3DefPaths.tags }
+    },
+    "/externalDocs": { "#": asyncApi3DefPaths.externalDocs },
+    "/bindings": { "#": asyncApi3DefPaths.operationBindings }
   }
 }
 
@@ -105,8 +150,20 @@ const componentOperationsRefMap: RefMapRules = {
       },
       "/messages": {
         "/*": {}
-      }
-    }
+      },
+      "/address": { "#": asyncApi3DefPaths.replyAddresses }
+    },
+    "/security": {
+      "/*": { "#": asyncApi3DefPaths.securitySchemes }
+    },
+    "/traits": {
+      "/*": { "#": asyncApi3DefPaths.operationTraits }
+    },
+    "/tags": {
+      "/*": { "#": asyncApi3DefPaths.tags }
+    },
+    "/externalDocs": { "#": asyncApi3DefPaths.externalDocs },
+    "/bindings": { "#": asyncApi3DefPaths.operationBindings }
   }
 }
 
@@ -115,6 +172,10 @@ const componentMessageRefMap: RefMapRules = {
   "/headers": schemaRefMap(asyncApi3DefPaths.schemas),
   "/correlationId": { "#": asyncApi3DefPaths.correlationIds },
   "/payload": schemaRefMap(asyncApi3DefPaths.schemas),
+  "/traits": {
+    "/*": { "#": asyncApi3DefPaths.messageTraits }
+  },
+  "/bindings": { "#": asyncApi3DefPaths.messageBindings }
 }
 
 export const asyncApi3RefMap: RefMapRules = {
@@ -146,7 +207,8 @@ export const asyncApi3RefMap: RefMapRules = {
         },
         "/messages": {
           "/*": {}
-        }
+        },
+        "/address": { "#": asyncApi3DefPaths.replyAddresses }
       }
     },
     "/replyAddresses": {
@@ -160,6 +222,43 @@ export const asyncApi3RefMap: RefMapRules = {
     },
     "/serverVariables": {
       "/*": { "#": asyncApi3DefPaths.serverVariables }
+    },
+    "/operationTraits": {
+      "/*": {
+        "#": asyncApi3DefPaths.operationTraits,
+        "/tags": {
+          "/*": { "#": asyncApi3DefPaths.tags }
+        },
+        "/externalDocs": { "#": asyncApi3DefPaths.externalDocs },
+        "/bindings": { "#": asyncApi3DefPaths.operationBindings },
+        "/security": {
+          "/*": { "#": asyncApi3DefPaths.securitySchemes }
+        }
+      }
+    },
+    "/messageTraits": {
+      "/*": {
+        "#": asyncApi3DefPaths.messageTraits,
+        "/headers": schemaRefMap(asyncApi3DefPaths.schemas),
+        "/correlationId": { "#": asyncApi3DefPaths.correlationIds },
+        "/tags": {
+          "/*": { "#": asyncApi3DefPaths.tags }
+        },
+        "/externalDocs": { "#": asyncApi3DefPaths.externalDocs },
+        "/bindings": { "#": asyncApi3DefPaths.messageBindings }
+      }
+    },
+    "/serverBindings": {
+      "/*": { "#": asyncApi3DefPaths.serverBindings }
+    },
+    "/channelBindings": {
+      "/*": { "#": asyncApi3DefPaths.channelBindings }
+    },
+    "/operationBindings": {
+      "/*": { "#": asyncApi3DefPaths.operationBindings }
+    },
+    "/messageBindings": {
+      "/*": { "#": asyncApi3DefPaths.messageBindings }
     }
   }
 }

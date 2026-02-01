@@ -1,0 +1,49 @@
+asyncapi: 3.0.0
+info:
+  title: AsyncAPI v3 Traits and Bindings Test
+  version: 1.0.0
+  description: Tests external refs for traits and bindings
+
+servers:
+  production:
+    host: api.example.com
+    protocol: wss
+    bindings:
+      $ref: './bindings.yaml#/serverBindings/websocket'
+
+channels:
+  UserChannel:
+    address: /users
+    bindings:
+      $ref: './bindings.yaml#/channelBindings/websocket'
+    messages:
+      UserMessage:
+        payload:
+          type: object
+          properties:
+            id:
+              type: string
+        traits:
+          - $ref: './traits.yaml#/messageTraits/commonHeaders'
+        bindings:
+          $ref: './bindings.yaml#/messageBindings/kafka'
+
+operations:
+  SendUser:
+    action: send
+    channel:
+      $ref: '#/channels/UserChannel'
+    messages:
+      - $ref: '#/channels/UserChannel/messages/UserMessage'
+    traits:
+      - $ref: './traits.yaml#/operationTraits/commonOp'
+    bindings:
+      $ref: './bindings.yaml#/operationBindings/kafka'
+
+components:
+  operationTraits:
+    localTrait:
+      description: A local operation trait
+  messageTraits:
+    localMessageTrait:
+      contentType: application/json
