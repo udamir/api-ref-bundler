@@ -1,0 +1,23 @@
+# External traits definitions
+
+operationTraits:
+  commonOp:
+    description: Common operation trait from external file
+    tags:
+      - name: external
+        description: From external traits file
+    externalDocs:
+      url: https://docs.example.com/traits
+
+messageTraits:
+  commonHeaders:
+    headers:
+      type: object
+      properties:
+        correlationId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    contentType: application/json
+    description: Common message headers from external file

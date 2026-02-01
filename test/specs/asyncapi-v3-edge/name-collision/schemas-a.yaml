@@ -1,0 +1,27 @@
+# External schemas file A
+# Contains User and Product schemas
+
+User:
+  type: object
+  description: User from file A (customer)
+  properties:
+    id:
+      type: string
+    customerName:
+      type: string
+    customerEmail:
+      type: string
+      format: email
+
+Product:
+  type: object
+  description: Product from file A (external)
+  properties:
+    id:
+      type: string
+    productName:
+      type: string
+    price:
+      type: number
+    externalOnly:
+      type: boolean

@@ -1,0 +1,197 @@
+asyncapi: 3.0.0
+
+info:
+  title: Comprehensive AsyncAPI v3 Test
+  version: 1.0.0
+  description: Tests all component types and $ref patterns
+
+servers:
+  production:
+    host: api.example.com
+    protocol: wss
+    description: Production server
+    variables:
+      version:
+        $ref: '#/components/serverVariables/apiVersion'
+    security:
+      - $ref: '#/components/securitySchemes/apiKey'
+    tags:
+      - $ref: '#/components/tags/production'
+    externalDocs:
+      $ref: '#/components/externalDocs/serverDocs'
+
+channels:
+  UserChannel:
+    address: /users/{userId}
+    description: User events channel
+    servers:
+      - $ref: '#/servers/production'
+    parameters:
+      userId:
+        $ref: '#/components/parameters/userId'
+    messages:
+      UserCreated:
+        headers:
+          $ref: '#/components/schemas/MessageHeaders'
+        payload:
+          $ref: '#/components/schemas/User'
+        correlationId:
+          $ref: '#/components/correlationIds/default'
+        traits:
+          - $ref: '#/components/messageTraits/commonHeaders'
+      UserUpdated:
+        payload:
+          $ref: '#/components/schemas/User'
+    tags:
+      - $ref: '#/components/tags/users'
+    externalDocs:
+      $ref: '#/components/externalDocs/channelDocs'
+
+operations:
+  CreateUser:
+    action: send
+    channel:
+      $ref: '#/channels/UserChannel'
+    messages:
+      - $ref: '#/channels/UserChannel/messages/UserCreated'
+    security:
+      - $ref: '#/components/securitySchemes/oauth2'
+    traits:
+      - $ref: '#/components/operationTraits/commonOp'
+    tags:
+      - $ref: '#/components/tags/users'
+    externalDocs:
+      $ref: '#/components/externalDocs/operationDocs'
+    reply:
+      address:
+        $ref: '#/components/replyAddresses/default'
+      channel:
+        $ref: '#/channels/UserChannel'
+      messages:
+        - $ref: '#/channels/UserChannel/messages/UserUpdated'
+
+  GetUser:
+    action: receive
+    channel:
+      $ref: '#/channels/UserChannel'
+    messages:
+      - $ref: '#/channels/UserChannel/messages/UserUpdated'
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        profile:
+          $ref: '#/components/schemas/Profile'
+    Profile:
+      type: object
+      properties:
+        bio:
+          type: string
+        avatar:
+          type: string
+    MessageHeaders:
+      type: object
+      properties:
+        correlationId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+  messages:
+    GenericUserMessage:
+      payload:
+        $ref: '#/components/schemas/User'
+      correlationId:
+        $ref: '#/components/correlationIds/default'
+
+  securitySchemes:
+    apiKey:
+      type: httpApiKey
+      in: header
+      name: X-API-Key
+    oauth2:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: https://example.com/oauth
+          scopes:
+            write: Write access
+            read: Read access
+
+  serverVariables:
+    apiVersion:
+      default: v1
+      enum:
+        - v1
+        - v2
+      description: API version
+
+  parameters:
+    userId:
+      description: User identifier
+      schema:
+        type: string
+
+  correlationIds:
+    default:
+      location: '$message.header#/correlationId'
+      description: Default correlation ID
+
+  operationTraits:
+    commonOp:
+      description: Common operation trait
+      tags:
+        - $ref: '#/components/tags/common'
+
+  messageTraits:
+    commonHeaders:
+      headers:
+        $ref: '#/components/schemas/MessageHeaders'
+      correlationId:
+        $ref: '#/components/correlationIds/default'
+
+  replies:
+    default:
+      channel:
+        $ref: '#/channels/UserChannel'
+      messages:
+        - $ref: '#/channels/UserChannel/messages/UserUpdated'
+
+  replyAddresses:
+    default:
+      location: '$message.header#/replyTo'
+      description: Default reply address
+
+  tags:
+    production:
+      name: production
+      description: Production environment
+    users:
+      name: users
+      description: User operations
+      externalDocs:
+        $ref: '#/components/externalDocs/tagDocs'
+    common:
+      name: common
+      description: Common tag
+
+  externalDocs:
+    serverDocs:
+      url: https://docs.example.com/servers
+      description: Server documentation
+    channelDocs:
+      url: https://docs.example.com/channels
+      description: Channel documentation
+    operationDocs:
+      url: https://docs.example.com/operations
+      description: Operation documentation
+    tagDocs:
+      url: https://docs.example.com/tags
+      description: Tag documentation

@@ -1,0 +1,43 @@
+asyncapi: 3.0.0
+info:
+  title: AsyncAPI v3 Name Collision Test
+  version: 1.0.0
+  description: Tests handling of external schemas with same names
+
+channels:
+  OrderChannel:
+    address: /orders
+    messages:
+      OrderMessage:
+        payload:
+          type: object
+          properties:
+            # BND-COL-001: Two external files with same schema name "User"
+            customerFromFileA:
+              $ref: './schemas-a.yaml#/User'
+            sellerFromFileB:
+              $ref: './schemas-b.yaml#/User'
+            # BND-COL-002: External name matches existing component
+            product:
+              $ref: './schemas-a.yaml#/Product'
+
+operations:
+  CreateOrder:
+    action: send
+    channel:
+      $ref: '#/channels/OrderChannel'
+    messages:
+      - $ref: '#/channels/OrderChannel/messages/OrderMessage'
+
+components:
+  schemas:
+    # This Product already exists - external Product should get unique name
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        internalOnly:
+          type: boolean
