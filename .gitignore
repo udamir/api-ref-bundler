@@ -8,3 +8,5 @@ browser
 coverage
 .DS_store
 .idea
+.claude
+claude.md
