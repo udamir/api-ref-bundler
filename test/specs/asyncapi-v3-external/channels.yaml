@@ -1,0 +1,13 @@
+SpeakChannel:
+  address: /v1/speak
+  messages:
+    TextInput:
+      $ref: './messages.yaml#/GenericTextMessage'
+    AudioOutput:
+      payload:
+        type: object
+        properties:
+          audio:
+            type: string
+            format: byte
+

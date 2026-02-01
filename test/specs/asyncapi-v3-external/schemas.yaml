@@ -1,0 +1,6 @@
+TextPayload:
+  type: object
+  properties:
+    text:
+      type: string
+
