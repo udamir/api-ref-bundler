@@ -1,0 +1,43 @@
+asyncapi: 3.0.0
+info:
+  title: AsyncAPI v3 Error Cases Test
+  version: 1.0.0
+  description: Tests error handling for invalid $refs
+
+channels:
+  ValidChannel:
+    address: /valid
+    messages:
+      ValidMessage:
+        payload:
+          $ref: '#/components/schemas/ValidSchema'
+      InvalidMessage:
+        payload:
+          # EDG-ERR-001: Reference to non-existent component
+          $ref: '#/components/schemas/NonExistentSchema'
+
+operations:
+  ValidOperation:
+    action: send
+    channel:
+      $ref: '#/channels/ValidChannel'
+    messages:
+      - $ref: '#/channels/ValidChannel/messages/ValidMessage'
+  InvalidOperation:
+    action: receive
+    channel:
+      # EDG-ERR-001: Reference to non-existent channel
+      $ref: '#/channels/NonExistentChannel'
+    messages:
+      - $ref: '#/channels/ValidChannel/messages/ValidMessage'
+
+components:
+  schemas:
+    ValidSchema:
+      type: object
+      properties:
+        id:
+          type: string
+        nested:
+          # EDG-ERR-001: Reference to non-existent nested schema
+          $ref: '#/components/schemas/MissingNestedSchema'

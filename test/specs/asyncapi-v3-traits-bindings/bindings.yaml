@@ -1,0 +1,36 @@
+# External bindings definitions
+
+serverBindings:
+  websocket:
+    ws:
+      method: GET
+      headers:
+        type: object
+        properties:
+          Authorization:
+            type: string
+
+channelBindings:
+  websocket:
+    ws:
+      method: GET
+      query:
+        type: object
+        properties:
+          token:
+            type: string
+
+operationBindings:
+  kafka:
+    kafka:
+      groupId:
+        type: string
+      clientId:
+        type: string
+
+messageBindings:
+  kafka:
+    kafka:
+      key:
+        type: string
+      schemaIdLocation: header

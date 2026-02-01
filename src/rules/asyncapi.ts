@@ -1,4 +1,4 @@
-import { DefinitionPointer, RefMapRules } from "../types"
+import type { DefinitionPointer, RefMapRules } from "../types"
 import { schemaRefMap } from "./jsonSchema"
 
 type AsyncApiComponents = "schemas" | "servers" | "serverVariables" | "channels" | "messages" | "securitySchemes" | "parameters" | "correlationIds" | "operationTraits" | "messageTraits" | "serverBindings" | "channelBindings" | "operationBindings" | "messageBindings"
