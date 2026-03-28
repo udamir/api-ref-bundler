@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.1]
+
+### Security
+
+- **Fix Prototype Pollution vulnerability (CVE pending)**: `setValueByPath` and `getValueByPath` in `src/utils.ts` now reject unsafe path segments (`__proto__`, `constructor`, `prototype`) to prevent Object.prototype pollution ([#472](https://github.com/udamir/api-ref-bundler/issues/472), CWE-1321, CVSS 7.5)
+
 ## [0.5.0]
 
 ### Added

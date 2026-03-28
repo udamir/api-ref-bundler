@@ -3,6 +3,8 @@ import { JsonPath, isArray, isObject } from "json-crawl"
 import { normalize } from "./normalize"
 import { JsonType } from "./types"
 
+const UNSAFE_PATH_KEYS = new Set(["__proto__", "constructor", "prototype"])
+
 const pathMask = {
   slash: /\//g,
   tilde: /~/g,
@@ -117,6 +119,7 @@ export const mergeValues = (value: any, patch: any) => {
 export const getValueByPath = (obj: any, path: JsonPath) => {
   let value = obj
   for (const key of path) {
+    if (typeof key === "string" && UNSAFE_PATH_KEYS.has(key)) { return undefined }
     value = Array.isArray(value) ? value[+key] : value[key]
     if (value === undefined) {
       break
@@ -129,6 +132,7 @@ export const setValueByPath = (obj: any, path: JsonPath, value: any, i = 0) => {
   if (i >= path.length) { return }
   
   const key = path[i]
+  if (typeof key === "string" && UNSAFE_PATH_KEYS.has(key)) { return }
   if (typeof obj[key] !== "object") {
     obj[key] = {}
   }
