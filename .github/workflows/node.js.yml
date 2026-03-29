@@ -21,11 +21,14 @@ jobs:
 
     steps:
     - uses: actions/checkout@v5
+    - uses: pnpm/action-setup@v4
+      with:
+        version: latest
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v5
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'yarn'
-    - run: yarn
-    - run: yarn build 
-    - run: yarn test
+        cache: 'pnpm'
+    - run: pnpm install
+    - run: pnpm build
+    - run: pnpm test

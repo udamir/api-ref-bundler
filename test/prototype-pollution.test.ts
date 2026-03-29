@@ -1,3 +1,4 @@
+import { describe, it, expect, afterEach } from 'vitest'
 import { setValueByPath, getValueByPath } from "../src/utils"
 
 describe("Prototype pollution prevention", () => {

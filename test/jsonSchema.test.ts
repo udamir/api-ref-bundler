@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest'
 import { resolver } from "./helpers"
 
 import { bundle } from "../src/bundle"
