@@ -18,7 +18,10 @@
   "scripts": {
     "build": "vite build",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "lint": "biome check",
+    "lint:fix": "biome check --write",
+    "prepublish": "pnpm lint && pnpm build && pnpm test"
   },
   "repository": {
     "type": "git",
@@ -37,6 +40,7 @@
   "author": "Damir Yusipov",
   "license": "MIT",
   "devDependencies": {
+    "@biomejs/biome": "^2.4.9",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^25.5.0",
     "@vitest/coverage-v8": "^4.1.2",
