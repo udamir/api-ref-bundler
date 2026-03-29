@@ -1,117 +1,113 @@
 // Expected output after dereference() with enableCircular: true
+/** biome-ignore-all lint/suspicious/noExplicitAny: test file */
 // Circular refs become actual JavaScript object references
 
 // Build the schema objects with circular references
 const Review: any = {
-  type: 'object',
+  type: "object",
   properties: {
     rating: {
-      type: 'integer'
+      type: "integer",
     },
     comment: {
-      type: 'string'
+      type: "string",
     },
-    reviewer: null as any  // Will be set to User
-  }
+  },
 }
 
-const Product: any = {
-  type: 'object',
+const Product = {
+  type: "object",
   properties: {
     id: {
-      type: 'string'
+      type: "string",
     },
     name: {
-      type: 'string'
+      type: "string",
     },
     reviews: {
-      type: 'array',
-      items: Review
-    }
-  }
+      type: "array",
+      items: Review,
+    },
+  },
 }
 
-const OrderItem: any = {
-  type: 'object',
+const OrderItem = {
+  type: "object",
   properties: {
     productId: {
-      type: 'string'
+      type: "string",
     },
     quantity: {
-      type: 'integer'
+      type: "integer",
     },
-    product: Product
-  }
+    product: Product,
+  },
 }
 
 const Order: any = {
-  type: 'object',
+  type: "object",
   properties: {
     orderId: {
-      type: 'string'
+      type: "string",
     },
     amount: {
-      type: 'number'
+      type: "number",
     },
-    customer: null as any,  // Will be set to User
     items: {
-      type: 'array',
-      items: OrderItem
-    }
-  }
+      type: "array",
+      items: OrderItem,
+    },
+  },
 }
 
 const User: any = {
-  type: 'object',
+  type: "object",
   properties: {
     id: {
-      type: 'string'
+      type: "string",
     },
     name: {
-      type: 'string'
+      type: "string",
     },
-    friend: null as any,  // Will be set to self
     orders: {
-      type: 'array',
-      items: Order
-    }
-  }
+      type: "array",
+      items: Order,
+    },
+  },
 }
 
 // Create circular references
-User.properties.friend = User  // Direct self-reference
-Order.properties.customer = User  // Indirect circular
-Review.properties.reviewer = User  // Deep circular
+User.properties.friend = User // Direct self-reference
+Order.properties.customer = User // Indirect circular
+Review.properties.reviewer = User // Deep circular
 
-const UserMessage: any = {
-  payload: User
+const UserMessage = {
+  payload: User,
 }
 
-const UserChannel: any = {
-  address: '/users/{userId}',
+const UserChannel = {
+  address: "/users/{userId}",
   messages: {
-    UserMessage
-  }
+    UserMessage,
+  },
 }
 
 export default {
-  asyncapi: '3.0.0',
+  asyncapi: "3.0.0",
   info: {
-    title: 'AsyncAPI v3 Circular Schema Test',
-    version: '1.0.0',
-    description: 'Tests circular $ref handling in AsyncAPI v3'
+    title: "AsyncAPI v3 Circular Schema Test",
+    version: "1.0.0",
+    description: "Tests circular $ref handling in AsyncAPI v3",
   },
   channels: {
-    UserChannel
+    UserChannel,
   },
   operations: {
     GetUser: {
-      action: 'receive',
+      action: "receive",
       channel: UserChannel,
-      messages: [
-        UserMessage
-      ]
-    }
+      messages: [UserMessage],
+    },
   },
   components: {
     schemas: {
@@ -119,8 +115,7 @@ export default {
       Order,
       OrderItem,
       Product,
-      Review
-    }
-  }
+      Review,
+    },
+  },
 }
-

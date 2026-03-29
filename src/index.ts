@@ -1,5 +1,5 @@
 export * from "./bundle"
 export * from "./dereference"
 export * from "./resolver"
-export * from "./utils"
 export * from "./types"
+export * from "./utils"

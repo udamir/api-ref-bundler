@@ -1,15 +1,14 @@
-
 /* eslint-disable max-depth, max-statements, complexity, max-lines-per-function */
 const SLASH = 47
 const DOT = 46
 
 // this function is directly from node source
 const posixNormalize = (path: string, allowAboveRoot: boolean) => {
-  let res = ''
+  let res = ""
   let lastSegmentLength = 0
   let lastSlash = -1
   let dots = 0
-  let code
+  let code: number | undefined
 
   for (let i = 0; i <= path.length; ++i) {
     if (i < path.length) {
@@ -30,21 +29,21 @@ const posixNormalize = (path: string, allowAboveRoot: boolean) => {
           res.charCodeAt(res.length - 2) !== DOT
         ) {
           if (res.length > 2) {
-            const lastSlashIndex = res.lastIndexOf('/')
+            const lastSlashIndex = res.lastIndexOf("/")
             if (lastSlashIndex !== res.length - 1) {
               if (lastSlashIndex === -1) {
-                res = ''
+                res = ""
                 lastSegmentLength = 0
               } else {
                 res = res.slice(0, lastSlashIndex)
-                lastSegmentLength = res.length - 1 - res.lastIndexOf('/')
+                lastSegmentLength = res.length - 1 - res.lastIndexOf("/")
               }
               lastSlash = i
               dots = 0
               continue
             }
           } else if (res.length === 2 || res.length === 1) {
-            res = ''
+            res = ""
             lastSegmentLength = 0
             lastSlash = i
             dots = 0
@@ -53,15 +52,15 @@ const posixNormalize = (path: string, allowAboveRoot: boolean) => {
         }
         if (allowAboveRoot) {
           if (res.length > 0) {
-            res += '/..'
+            res += "/.."
           } else {
-            res = '..'
+            res = ".."
           }
           lastSegmentLength = 2
         }
       } else {
         if (res.length > 0) {
-          res += '/' + path.slice(lastSlash + 1, i)
+          res += `/${path.slice(lastSlash + 1, i)}`
         } else {
           res = path.slice(lastSlash + 1, i)
         }
@@ -82,7 +81,7 @@ const posixNormalize = (path: string, allowAboveRoot: boolean) => {
 export const normalize = (p: string) => {
   let path = p
   if (path.length === 0) {
-    return '.'
+    return "."
   }
 
   const isAbsolute = path.charCodeAt(0) === SLASH
@@ -95,13 +94,13 @@ export const normalize = (p: string) => {
   }
 
   if (path.length === 0 && !isAbsolute) {
-    path = '.'
+    path = "."
   }
   if (path.length > 0 && trailingSeparator) {
-    path += '/'
+    path += "/"
   }
   if (isAbsolute) {
-    return '/' + path
+    return `/${path}`
   }
 
   return path

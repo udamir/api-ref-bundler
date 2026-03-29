@@ -3,6 +3,5 @@ import dereferenced from "./dereferenced"
 
 export default {
   bundled,
-  dereferenced
+  dereferenced,
 }
-

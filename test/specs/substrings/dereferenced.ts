@@ -3,33 +3,31 @@ export default {
   definitions: {
     "name-with-min-length": {
       "min-length": 1,
-      type: "string"
+      type: "string",
     },
     "name-with-min-length-max-length": {
       "min-length": 1,
       "max-length": 20,
-      type: "string"
+      type: "string",
     },
     name: {
-      type: "string"
-    }
+      type: "string",
+    },
   },
-  required: [
-    "name"
-  ],
+  required: ["name"],
   type: "object",
   properties: {
     middleName: {
       "min-length": 1,
-      type: "string"
+      type: "string",
     },
     lastName: {
       "min-length": 1,
       "max-length": 20,
-      type: "string"
+      type: "string",
     },
     firstName: {
-      type: "string"
-    }
+      type: "string",
+    },
   },
 }

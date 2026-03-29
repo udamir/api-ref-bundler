@@ -1,67 +1,63 @@
 export default {
-  asyncapi: '3.0.0',
+  asyncapi: "3.0.0",
   info: {
-    title: 'AsyncAPI v3 External Refs Test',
-    version: '1.0.0'
+    title: "AsyncAPI v3 External Refs Test",
+    version: "1.0.0",
   },
   components: {
     schemas: {
       TextPayload: {
-        type: 'object',
+        type: "object",
         properties: {
           text: {
-            type: 'string'
-          }
-        }
-      }
+            type: "string",
+          },
+        },
+      },
     },
     messages: {
       GenericTextMessage: {
         payload: {
-          $ref: '#/components/schemas/TextPayload'
-        }
-      }
-    }
+          $ref: "#/components/schemas/TextPayload",
+        },
+      },
+    },
   },
   channels: {
     SpeakChannel: {
-      address: '/v1/speak',
+      address: "/v1/speak",
       messages: {
         TextInput: {
-          $ref: '#/components/messages/GenericTextMessage'
+          $ref: "#/components/messages/GenericTextMessage",
         },
         AudioOutput: {
           payload: {
-            type: 'object',
+            type: "object",
             properties: {
               audio: {
-                type: 'string',
-                format: 'byte'
-              }
-            }
-          }
-        }
-      }
-    }
+                type: "string",
+                format: "byte",
+              },
+            },
+          },
+        },
+      },
+    },
   },
   operations: {
     SendText: {
-      action: 'send',
+      action: "send",
       channel: {
-        $ref: '#/channels/SpeakChannel'
+        $ref: "#/channels/SpeakChannel",
       },
-      messages: [
-        { $ref: '#/channels/SpeakChannel/messages/TextInput' }
-      ]
+      messages: [{ $ref: "#/channels/SpeakChannel/messages/TextInput" }],
     },
     ReceiveAudio: {
-      action: 'receive',
+      action: "receive",
       channel: {
-        $ref: '#/channels/SpeakChannel'
+        $ref: "#/channels/SpeakChannel",
       },
-      messages: [
-        { $ref: '#/channels/SpeakChannel/messages/AudioOutput' }
-      ]
-    }
-  }
+      messages: [{ $ref: "#/channels/SpeakChannel/messages/AudioOutput" }],
+    },
+  },
 }

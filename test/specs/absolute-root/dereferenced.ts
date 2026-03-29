@@ -1,98 +1,87 @@
 export default {
   title: "Person",
   type: "object",
-  required: [
-    "name"
-  ],
+  required: ["name"],
   properties: {
     name: {
       title: "name",
       type: "object",
-      required: [
-        "first",
-        "last"
-      ],
+      required: ["first", "last"],
       properties: {
         first: {
           title: "required string",
           type: "string",
-          minLength: 1
+          minLength: 1,
         },
         last: {
           title: "required string",
           type: "string",
-          minLength: 1
+          minLength: 1,
         },
         middle: {
           type: "string",
-          minLength: 1
+          minLength: 1,
         },
         prefix: {
           title: "required string",
           type: "string",
-          minLength: 3
+          minLength: 3,
         },
         suffix: {
           title: "required string",
           type: "string",
           minLength: 3,
-          maxLength: 3
-        }
-      }
+          maxLength: 3,
+        },
+      },
     },
     age: {
       type: "integer",
-      minimum: 0
+      minimum: 0,
     },
     gender: {
       type: "string",
-      enum: [
-        "male",
-        "female"
-      ]
-    }
+      enum: ["male", "female"],
+    },
   },
   definitions: {
     "required string": {
       title: "required string",
       type: "string",
-      minLength: 1
+      minLength: 1,
     },
     string: "string",
     name: {
       title: "name",
       type: "object",
-      required: [
-        "first",
-        "last"
-      ],
+      required: ["first", "last"],
       properties: {
         first: {
           title: "required string",
           type: "string",
-          minLength: 1
+          minLength: 1,
         },
         last: {
           title: "required string",
           type: "string",
-          minLength: 1
+          minLength: 1,
         },
         middle: {
           type: "string",
-          minLength: 1
+          minLength: 1,
         },
         prefix: {
           title: "required string",
           type: "string",
-          minLength: 3
+          minLength: 3,
         },
         suffix: {
           title: "required string",
           type: "string",
           minLength: 3,
-          maxLength: 3
-        }
-      }
-    }
-  }
+          maxLength: 3,
+        },
+      },
+    },
+  },
 }

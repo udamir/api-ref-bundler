@@ -1,16 +1,13 @@
 export default {
   title: "Extending a root $ref",
-  required: [
-    "first",
-    "last"
-  ],
+  required: ["first", "last"],
   type: "object",
   properties: {
     last: {
-      type: "string"
+      type: "string",
     },
     first: {
-      type: "string"
-    }
+      type: "string",
+    },
   },
-};
+}

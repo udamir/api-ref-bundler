@@ -5,5 +5,5 @@ import dereferencedCircular from "./dereferenced-circular"
 export default {
   bundled,
   dereferenced,
-  dereferencedCircular
+  dereferencedCircular,
 }

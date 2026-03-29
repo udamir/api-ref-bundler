@@ -1,7 +1,16 @@
-import { DefinitionPointer, RefMapRules } from "../types"
+import type { DefinitionPointer, RefMapRules } from "../types"
 import { schemaRefMap } from "./jsonSchema"
 
-type OpenApiComponents = "schemas" | "responses" | "parameters" | "examples" | "requestBodies" | "securitySchemes" | "headers" | "callbacks" | "links"
+type OpenApiComponents =
+  | "schemas"
+  | "responses"
+  | "parameters"
+  | "examples"
+  | "requestBodies"
+  | "securitySchemes"
+  | "headers"
+  | "callbacks"
+  | "links"
 
 const openApiRefRule: Record<OpenApiComponents, DefinitionPointer> = {
   schemas: "/components/schemas",
@@ -24,16 +33,16 @@ const parametersRefMap: RefMapRules = {
     "#": openApiRefRule.parameters,
     "/schema": schemaRefMap(openApiRefRule.schemas),
     "/example": { "#": openApiRefRule.examples },
-    "/examples": examplesRefMap
-  }
+    "/examples": examplesRefMap,
+  },
 }
 const headersRefMap: RefMapRules = {
   "/*": {
     "#": openApiRefRule.headers,
     "/schema": schemaRefMap(openApiRefRule.schemas),
     "/example": { "#": openApiRefRule.examples },
-    "/examples": examplesRefMap
-  }
+    "/examples": examplesRefMap,
+  },
 }
 
 const mediaTypesRefMap: RefMapRules = {
@@ -42,22 +51,22 @@ const mediaTypesRefMap: RefMapRules = {
     "/example": { "#": openApiRefRule.examples },
     "/examples": examplesRefMap,
     "/encoding": {
-      "/headers": headersRefMap
-    }
-  }
+      "/headers": headersRefMap,
+    },
+  },
 }
 
 const requestBodyRefMap: RefMapRules = {
   "#": openApiRefRule.requestBodies,
-  "/content": mediaTypesRefMap
+  "/content": mediaTypesRefMap,
 }
 
 const callbacksRefMap: RefMapRules = {
-  "/*": { "#": openApiRefRule.callbacks }
+  "/*": { "#": openApiRefRule.callbacks },
 }
 
 const linksRefMap: RefMapRules = {
-  "/*": { "#": openApiRefRule.links }
+  "/*": { "#": openApiRefRule.links },
 }
 
 const responsesRefMap: RefMapRules = {
@@ -65,8 +74,8 @@ const responsesRefMap: RefMapRules = {
     "#": openApiRefRule.responses,
     "/headers": headersRefMap,
     "/content": mediaTypesRefMap,
-    "/links": linksRefMap
-  }
+    "/links": linksRefMap,
+  },
 }
 
 export const openApiRefMap: RefMapRules = {
@@ -76,20 +85,20 @@ export const openApiRefMap: RefMapRules = {
         "/parameters": parametersRefMap,
         "/requestBody": requestBodyRefMap,
         "/responses": responsesRefMap,
-        "/callbacks": callbacksRefMap
+        "/callbacks": callbacksRefMap,
       },
       "/parameters": parametersRefMap,
     },
   },
   "/components": {
     "/schemas": {
-      "/*": schemaRefMap(openApiRefRule.schemas)
+      "/*": schemaRefMap(openApiRefRule.schemas),
     },
     "/responses": responsesRefMap,
     "/parameters": parametersRefMap,
     "/examples": examplesRefMap,
     "/requestBodies": {
-      "/*": requestBodyRefMap
+      "/*": requestBodyRefMap,
     },
     "/securitySchemes": {
       "/*": { "#": openApiRefRule.securitySchemes },
@@ -97,5 +106,5 @@ export const openApiRefMap: RefMapRules = {
     "/headers": headersRefMap,
     "/links": linksRefMap,
     "/callbacks": callbacksRefMap,
-  }
+  },
 }

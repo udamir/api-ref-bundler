@@ -1,159 +1,159 @@
 export default {
-  asyncapi: '3.0.0',
+  asyncapi: "3.0.0",
   info: {
-    title: 'AsyncAPI v3 Test Spec',
-    version: '1.0.0',
-    description: 'Test spec to verify v3 bundling preserves channel-scoped message refs'
+    title: "AsyncAPI v3 Test Spec",
+    version: "1.0.0",
+    description:
+      "Test spec to verify v3 bundling preserves channel-scoped message refs",
   },
   servers: {
     production: {
-      host: 'api.example.com',
-      protocol: 'wss'
-    }
+      host: "api.example.com",
+      protocol: "wss",
+    },
   },
   components: {
     schemas: {
       TextPayload: {
-        type: 'object',
+        type: "object",
         properties: {
           text: {
-            type: 'string'
-          }
-        }
-      }
+            type: "string",
+          },
+        },
+      },
     },
     messages: {
       GenericTextMessage: {
         payload: {
-          type: 'object',
+          type: "object",
           properties: {
             text: {
-              type: 'string'
-            }
-          }
-        }
-      }
+              type: "string",
+            },
+          },
+        },
+      },
     },
     securitySchemes: {
       apiKey: {
-        type: 'httpApiKey',
-        in: 'header',
-        name: 'Authorization'
-      }
-    }
+        type: "httpApiKey",
+        in: "header",
+        name: "Authorization",
+      },
+    },
   },
   channels: {
     SpeakChannel: {
-      address: '/v1/speak',
+      address: "/v1/speak",
       messages: {
         TextInput: {
           payload: {
-            type: 'object',
+            type: "object",
             properties: {
               text: {
-                type: 'string'
-              }
-            }
-          }
+                type: "string",
+              },
+            },
+          },
         },
         AudioOutput: {
           payload: {
-            type: 'object',
+            type: "object",
             properties: {
               audio: {
-                type: 'string',
-                format: 'byte'
-              }
-            }
-          }
-        }
-      }
-    }
+                type: "string",
+                format: "byte",
+              },
+            },
+          },
+        },
+      },
+    },
   },
   operations: {
     SendText: {
-      action: 'send',
+      action: "send",
       channel: {
-        address: '/v1/speak',
+        address: "/v1/speak",
         messages: {
           TextInput: {
             payload: {
-              type: 'object',
+              type: "object",
               properties: {
                 text: {
-                  type: 'string'
-                }
-              }
-            }
+                  type: "string",
+                },
+              },
+            },
           },
           AudioOutput: {
             payload: {
-              type: 'object',
+              type: "object",
               properties: {
                 audio: {
-                  type: 'string',
-                  format: 'byte'
-                }
-              }
-            }
-          }
-        }
+                  type: "string",
+                  format: "byte",
+                },
+              },
+            },
+          },
+        },
       },
       messages: [
         {
           payload: {
-            type: 'object',
+            type: "object",
             properties: {
               text: {
-                type: 'string'
-              }
-            }
-          }
-        }
-      ]
+                type: "string",
+              },
+            },
+          },
+        },
+      ],
     },
     ReceiveAudio: {
-      action: 'receive',
+      action: "receive",
       channel: {
-        address: '/v1/speak',
+        address: "/v1/speak",
         messages: {
           TextInput: {
             payload: {
-              type: 'object',
+              type: "object",
               properties: {
                 text: {
-                  type: 'string'
-                }
-              }
-            }
+                  type: "string",
+                },
+              },
+            },
           },
           AudioOutput: {
             payload: {
-              type: 'object',
+              type: "object",
               properties: {
                 audio: {
-                  type: 'string',
-                  format: 'byte'
-                }
-              }
-            }
-          }
-        }
+                  type: "string",
+                  format: "byte",
+                },
+              },
+            },
+          },
+        },
       },
       messages: [
         {
           payload: {
-            type: 'object',
+            type: "object",
             properties: {
               audio: {
-                type: 'string',
-                format: 'byte'
-              }
-            }
-          }
-        }
-      ]
-    }
-  }
+                type: "string",
+                format: "byte",
+              },
+            },
+          },
+        },
+      ],
+    },
+  },
 }
-

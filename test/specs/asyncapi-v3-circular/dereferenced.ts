@@ -4,116 +4,114 @@
 // Note: The User schema is first encountered via #/channels/UserChannel/messages/UserMessage/payload
 // so all circular refs to User point there instead of #/components/schemas/User
 
-const OrderItem: any = {
-  type: 'object',
+const OrderItem = {
+  type: "object",
   properties: {
     productId: {
-      type: 'string'
+      type: "string",
     },
     quantity: {
-      type: 'integer'
+      type: "integer",
     },
     product: {
-      type: 'object',
+      type: "object",
       properties: {
         id: {
-          type: 'string'
+          type: "string",
         },
         name: {
-          type: 'string'
+          type: "string",
         },
         reviews: {
-          type: 'array',
+          type: "array",
           items: {
-            type: 'object',
+            type: "object",
             properties: {
               rating: {
-                type: 'integer'
+                type: "integer",
               },
               comment: {
-                type: 'string'
+                type: "string",
               },
               reviewer: {
                 // Circular ref - points to first occurrence of User
-                $ref: '#/channels/UserChannel/messages/UserMessage/payload'
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+                $ref: "#/channels/UserChannel/messages/UserMessage/payload",
+              },
+            },
+          },
+        },
+      },
+    },
+  },
 }
 
-const Order: any = {
-  type: 'object',
+const Order = {
+  type: "object",
   properties: {
     orderId: {
-      type: 'string'
+      type: "string",
     },
     amount: {
-      type: 'number'
+      type: "number",
     },
     customer: {
       // Circular ref - points to first occurrence of User
-      $ref: '#/channels/UserChannel/messages/UserMessage/payload'
+      $ref: "#/channels/UserChannel/messages/UserMessage/payload",
     },
     items: {
-      type: 'array',
-      items: OrderItem
-    }
-  }
+      type: "array",
+      items: OrderItem,
+    },
+  },
 }
 
-const User: any = {
-  type: 'object',
+const User = {
+  type: "object",
   properties: {
     id: {
-      type: 'string'
+      type: "string",
     },
     name: {
-      type: 'string'
+      type: "string",
     },
     friend: {
       // Direct circular ref to self - points to first occurrence
-      $ref: '#/channels/UserChannel/messages/UserMessage/payload'
+      $ref: "#/channels/UserChannel/messages/UserMessage/payload",
     },
     orders: {
-      type: 'array',
-      items: Order
-    }
-  }
+      type: "array",
+      items: Order,
+    },
+  },
 }
 
-const UserMessage: any = {
-  payload: User
+const UserMessage = {
+  payload: User,
 }
 
-const UserChannel: any = {
-  address: '/users/{userId}',
+const UserChannel = {
+  address: "/users/{userId}",
   messages: {
-    UserMessage
-  }
+    UserMessage,
+  },
 }
 
 export default {
-  asyncapi: '3.0.0',
+  asyncapi: "3.0.0",
   info: {
-    title: 'AsyncAPI v3 Circular Schema Test',
-    version: '1.0.0',
-    description: 'Tests circular $ref handling in AsyncAPI v3'
+    title: "AsyncAPI v3 Circular Schema Test",
+    version: "1.0.0",
+    description: "Tests circular $ref handling in AsyncAPI v3",
   },
   channels: {
-    UserChannel
+    UserChannel,
   },
   operations: {
     GetUser: {
-      action: 'receive',
+      action: "receive",
       channel: UserChannel,
-      messages: [
-        UserMessage
-      ]
-    }
+      messages: [UserMessage],
+    },
   },
   components: {
     schemas: {
@@ -121,47 +119,47 @@ export default {
       Order,
       OrderItem,
       Product: {
-        type: 'object',
+        type: "object",
         properties: {
           id: {
-            type: 'string'
+            type: "string",
           },
           name: {
-            type: 'string'
+            type: "string",
           },
           reviews: {
-            type: 'array',
+            type: "array",
             items: {
-              type: 'object',
+              type: "object",
               properties: {
                 rating: {
-                  type: 'integer'
+                  type: "integer",
                 },
                 comment: {
-                  type: 'string'
+                  type: "string",
                 },
                 reviewer: {
-                  $ref: '#/channels/UserChannel/messages/UserMessage/payload'
-                }
-              }
-            }
-          }
-        }
+                  $ref: "#/channels/UserChannel/messages/UserMessage/payload",
+                },
+              },
+            },
+          },
+        },
       },
       Review: {
-        type: 'object',
+        type: "object",
         properties: {
           rating: {
-            type: 'integer'
+            type: "integer",
           },
           comment: {
-            type: 'string'
+            type: "string",
           },
           reviewer: {
-            $ref: '#/channels/UserChannel/messages/UserMessage/payload'
-          }
-        }
-      }
-    }
-  }
+            $ref: "#/channels/UserChannel/messages/UserMessage/payload",
+          },
+        },
+      },
+    },
+  },
 }

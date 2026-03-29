@@ -1,7 +1,21 @@
 import type { DefinitionPointer, RefMapRules } from "../types"
 import { schemaRefMap } from "./jsonSchema"
 
-type AsyncApiComponents = "schemas" | "servers" | "serverVariables" | "channels" | "messages" | "securitySchemes" | "parameters" | "correlationIds" | "operationTraits" | "messageTraits" | "serverBindings" | "channelBindings" | "operationBindings" | "messageBindings"
+type AsyncApiComponents =
+  | "schemas"
+  | "servers"
+  | "serverVariables"
+  | "channels"
+  | "messages"
+  | "securitySchemes"
+  | "parameters"
+  | "correlationIds"
+  | "operationTraits"
+  | "messageTraits"
+  | "serverBindings"
+  | "channelBindings"
+  | "operationBindings"
+  | "messageBindings"
 
 const asyncApiDefPaths: Record<AsyncApiComponents, DefinitionPointer> = {
   schemas: "/components/schemas",
@@ -23,25 +37,25 @@ const asyncApiDefPaths: Record<AsyncApiComponents, DefinitionPointer> = {
 const parametersRefMap: RefMapRules = {
   "/*": {
     "#": asyncApiDefPaths.parameters,
-    "/schema": schemaRefMap(asyncApiDefPaths.schemas)
-  }
+    "/schema": schemaRefMap(asyncApiDefPaths.schemas),
+  },
 }
 
 const serversRefMap: RefMapRules = {
   "/*": {
     "#": asyncApiDefPaths.servers,
     "/variables": {
-      "/*": { "#": asyncApiDefPaths.serverVariables }
+      "/*": { "#": asyncApiDefPaths.serverVariables },
     },
-    "/bindings": { "#": asyncApiDefPaths.serverBindings }
-  }
+    "/bindings": { "#": asyncApiDefPaths.serverBindings },
+  },
 }
 
 const operationTraitsRefMap: RefMapRules = {
   "/*": {
     "#": asyncApiDefPaths.operationTraits,
-    "/bindings": { "#": asyncApiDefPaths.operationBindings }
-  }
+    "/bindings": { "#": asyncApiDefPaths.operationBindings },
+  },
 }
 
 const messageTraitsRefMap: RefMapRules = {
@@ -50,7 +64,7 @@ const messageTraitsRefMap: RefMapRules = {
     "/headers": schemaRefMap(asyncApiDefPaths.schemas),
     "/correlationId": { "#": asyncApiDefPaths.correlationIds },
     "/bindings": { "#": asyncApiDefPaths.messageBindings },
-  }
+  },
 }
 
 const messageRefMap: RefMapRules = {
@@ -67,8 +81,8 @@ const operationRefMap: RefMapRules = {
   "/message": {
     ...messageRefMap,
     "/oneOf": {
-      "/*": messageRefMap
-    }
+      "/*": messageRefMap,
+    },
   },
   "/bindings": { "#": asyncApiDefPaths.operationBindings },
 }
@@ -80,7 +94,7 @@ const channelsRefMap: RefMapRules = {
     "/subscribe": operationRefMap,
     "/publish": operationRefMap,
     "/parameters": parametersRefMap,
-  }
+  },
 }
 
 export const asyncApiRefMap: RefMapRules = {
@@ -88,36 +102,36 @@ export const asyncApiRefMap: RefMapRules = {
   "/channels": channelsRefMap,
   "/components": {
     "/schemas": {
-      "/*": () => schemaRefMap(asyncApiDefPaths.schemas)
+      "/*": () => schemaRefMap(asyncApiDefPaths.schemas),
     },
     "/servers": serversRefMap,
     "/serverVariables": {
-      "/*": { "#": asyncApiDefPaths.serverVariables }
+      "/*": { "#": asyncApiDefPaths.serverVariables },
     },
     "/channels": channelsRefMap,
     "/messages": {
-      "/*": messageRefMap
+      "/*": messageRefMap,
     },
     "/parameters": parametersRefMap,
     "/correlationIds": {
-      "/*": { "#": asyncApiDefPaths.correlationIds }
+      "/*": { "#": asyncApiDefPaths.correlationIds },
     },
     "/operationTraits": operationTraitsRefMap,
     "/messageTraits": messageTraitsRefMap,
     "/securitySchemes": {
-      "/*": { "#": asyncApiDefPaths.securitySchemes }
+      "/*": { "#": asyncApiDefPaths.securitySchemes },
     },
     "/serverBindings": {
-      "/*": { "#": asyncApiDefPaths.serverBindings }
+      "/*": { "#": asyncApiDefPaths.serverBindings },
     },
     "/channelBindings": {
-      "/*": { "#": asyncApiDefPaths.channelBindings }
+      "/*": { "#": asyncApiDefPaths.channelBindings },
     },
     "/operationBindings": {
-      "/*": { "#": asyncApiDefPaths.operationBindings }
+      "/*": { "#": asyncApiDefPaths.operationBindings },
     },
     "/messageBindings": {
-      "/*": { "#": asyncApiDefPaths.messageBindings }
-    }
-  }
+      "/*": { "#": asyncApiDefPaths.messageBindings },
+    },
+  },
 }

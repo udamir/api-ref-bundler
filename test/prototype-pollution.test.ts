@@ -1,8 +1,8 @@
-import { describe, it, expect, afterEach } from 'vitest'
-import { setValueByPath, getValueByPath } from "../src/utils"
+/** biome-ignore-all lint/suspicious/noExplicitAny: test file */
+import { afterEach, describe, expect, it } from "vitest"
+import { getValueByPath, setValueByPath } from "../src/utils"
 
 describe("Prototype pollution prevention", () => {
-
   afterEach(() => {
     // Clean up in case a test fails and pollution occurs
     delete (Object.prototype as any).polluted
@@ -13,7 +13,7 @@ describe("Prototype pollution prevention", () => {
       const obj = {}
       setValueByPath(obj, ["__proto__", "polluted"], "yes")
       expect(({} as any).polluted).toBeUndefined()
-      expect(Object.prototype.hasOwnProperty("polluted")).toBe(false)
+      expect(Object.hasOwn(Object.prototype, "polluted")).toBe(false)
     })
 
     it("should not pollute via constructor", () => {

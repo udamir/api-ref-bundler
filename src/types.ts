@@ -1,6 +1,16 @@
-import { CrawlRules } from "json-crawl"
+import type { CrawlRules } from "json-crawl"
 
-export type JsonType = "OpenApi3" | "OpenApi2" | "AsyncApi2" | "AsyncApi3" | "JsonSchema" | "unknown"
+export type JsonPrimitive = string | number | boolean | null
+export type JsonObject = { [key: string]: JsonNode | undefined }
+export type JsonNode = JsonPrimitive | JsonNode[] | JsonObject
+
+export type JsonType =
+  | "OpenApi3"
+  | "OpenApi2"
+  | "AsyncApi2"
+  | "AsyncApi3"
+  | "JsonSchema"
+  | "unknown"
 
 export type DefinitionPointer = `/${string}`
 export type RefMapRule = { "#"?: DefinitionPointer }

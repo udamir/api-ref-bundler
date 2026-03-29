@@ -1,39 +1,57 @@
-import { CloneHook, CloneState, CrawlContext, JsonPath, clone, isObject } from "json-crawl"
-
-import { buildPointer, buildRef, getValueByPath, MapArray, mergeValues, parseRef, setValueByPath } from "./utils"
-import { RefResolver, Resolver } from "./resolver"
+import {
+  type CloneHook,
+  type CloneState,
+  type CrawlContext,
+  clone,
+  isObject,
+  type JsonPath,
+} from "json-crawl"
+import { RefResolver, type Resolver } from "./resolver"
+import type { JsonNode } from "./types"
+import {
+  buildPointer,
+  buildRef,
+  getValueByPath,
+  MapArray,
+  mergeValues,
+  parseRef,
+  setValueByPath,
+} from "./utils"
 
 // Symbol key for cycled nodes (used for enableCircular mode)
 const cycleRef = Symbol("cycleRef")
 
 export interface RefNode {
-  pointer: string   // pointer to node
-  ref: string       // normalized ref
-  sibling?: any     // sibling content
+  pointer: string // pointer to node
+  ref: string // normalized ref
+  sibling?: JsonNode // sibling content
 }
 
 export interface DereferenceState {
   refNodes: RefNode[] // parent ref nodes
-  baseFile: string    // current file
+  baseFile: string // current file
 }
 
 export type DereferenceContext = CrawlContext<CloneState<DereferenceState>>
 
 export interface DereferenceOptions {
-  ignoreSibling?: boolean   // ignore $ref sibling content
-  fullCrawl?: boolean       // crawl all nodes includin cached
-  enableCircular?: boolean  // convert circular $refs to nodes
-  parallelCrawl?: boolean   // parallel crawl can speedup dereference [experimental]
+  ignoreSibling?: boolean // ignore $ref sibling content
+  fullCrawl?: boolean // crawl all nodes includin cached
+  enableCircular?: boolean // convert circular $refs to nodes
+  parallelCrawl?: boolean // parallel crawl can speedup dereference [experimental]
   hooks?: {
-    onError?: (message: string, ctx: DereferenceContext) => void  // error hook
-    onRef?: (ref: string, ctx: DereferenceContext) => void        // ref hook
-    onCrawl?: (value: any, ctx: DereferenceContext) => void       // node crawl hook
-    onExit?: (value: any, ctx: DereferenceContext) => void        // node crawl exit hook
-    onCycle?: (ref: string, ctx: DereferenceContext) => void      // cycle refs hook
-  } 
+    onError?: (message: string, ctx: DereferenceContext) => void // error hook
+    onRef?: (ref: string, ctx: DereferenceContext) => void // ref hook
+    onCrawl?: (value: JsonNode, ctx: DereferenceContext) => void // node crawl hook
+    onExit?: (value: JsonNode, ctx: DereferenceContext) => void // node crawl exit hook
+    onCycle?: (ref: string, ctx: DereferenceContext) => void // cycle refs hook
+  }
 }
 
-export const dereferenceHook = (refResolver: RefResolver, options: DereferenceOptions = {}): CloneHook<DereferenceState> => {
+export const dereferenceHook = (
+  refResolver: RefResolver,
+  options: DereferenceOptions = {},
+): CloneHook<DereferenceState> => {
   const { ignoreSibling, enableCircular, fullCrawl, hooks } = options
 
   /**
@@ -41,7 +59,7 @@ export const dereferenceHook = (refResolver: RefResolver, options: DereferenceOp
    * key   - normilized ref
    * value - dereferenced node
    */
-  const cache = new Map<string, any>()
+  const cache = new Map<string, JsonNode>()
 
   /**
    * Map of cycle nodes paths (used for enableCircular mode)
@@ -58,126 +76,173 @@ export const dereferenceHook = (refResolver: RefResolver, options: DereferenceOp
     // console.debug(buildPointer(path), state.baseFile)
 
     const exitHook = () => {
-      hooks?.onExit && hooks.onExit(node[key], ctx)
-      if (!isObject(node[key])) { return }
-      cache.set(buildRef(path, state.baseFile), node[key])
-      
+      const nodeValue = node[key] as JsonNode
+      hooks?.onExit?.(nodeValue, ctx)
+      if (!isObject(nodeValue)) {
+        return
+      }
+      cache.set(buildRef(path, state.baseFile), nodeValue)
+
       // update nodes with cycle $refs
       if (enableCircular) {
         const refs = cycleNodes.get(buildPointer(path))
 
-        if (!refs) { return }
-  
+        if (!refs) {
+          return
+        }
+
         for (const ref of refs) {
           // get sibling content from cycle node
-          const sibling = getValueByPath(root["#"], ref)
-  
+          const sibling = getValueByPath(root["#"], ref) as
+            | Record<string | symbol, unknown>
+            | undefined
+
           // skip if already resolved
-          if (sibling && sibling[cycleRef]) { continue }
-  
+          if (sibling?.[cycleRef]) {
+            continue
+          }
+
           // merge with sibling
-          const value = sibling ? mergeValues(node[key], sibling) : node[key]
+          const value = sibling
+            ? mergeValues(nodeValue, sibling as JsonNode)
+            : nodeValue
           // add cycle ref symbol to node
-          value[cycleRef] = buildRef(path)
-  
+          ;(value as Record<string | symbol, unknown>)[cycleRef] =
+            buildRef(path)
+
           // update cycle node
-          setValueByPath(root["#"], ref, value)
+          setValueByPath(
+            root["#"] as Record<string | number, unknown>,
+            ref,
+            value,
+          )
         }
       }
     }
 
-    if (!isObject(value) || !value.hasOwnProperty("$ref") || typeof value.$ref !== "string") {
-      hooks?.onCrawl && hooks.onCrawl(value, ctx)
+    if (
+      !isObject(value) ||
+      !Object.hasOwn(value, "$ref") ||
+      typeof value.$ref !== "string"
+    ) {
+      hooks?.onCrawl?.(value as JsonNode, ctx)
       return { value, state, exitHook }
     }
 
     const { $ref, ...rest } = value
-    const sibling = (!Object.keys(rest).length || ignoreSibling) ? null : rest
+    const sibling = !Object.keys(rest).length || ignoreSibling ? null : rest
 
     const { filePath, pointer, normalized } = parseRef($ref, state.baseFile)
 
-    hooks?.onRef && hooks.onRef(normalized, ctx)
+    hooks?.onRef?.(normalized, ctx)
 
     // check if current $ref was in parent nodes
     const refNode = state.refNodes.find((node, i, refNodes) => {
       // if node has sibling content, previous ref nodes should be equal
-      if (normalized !== node.ref) { return }
-      const prevRefNode = refNodes[refNodes.length-1]
-      return !node.sibling || refNodes[i-1]?.ref === prevRefNode.ref
+      if (normalized !== node.ref) {
+        return false
+      }
+      const prevRefNode = refNodes[refNodes.length - 1]
+      return !node.sibling || refNodes[i - 1]?.ref === prevRefNode.ref
     })
 
     if (refNode) {
-      hooks?.onCycle && hooks.onCycle(refNode.pointer, ctx)
-      let _value
+      hooks?.onCycle?.(refNode.pointer, ctx)
+      let _value: JsonNode
       if (enableCircular) {
         cycleNodes.add(refNode.pointer, path)
-        _value = (!sibling) ? null : sibling
+        _value = !sibling ? null : sibling
       } else {
-        _value = { $ref: "#" + refNode.pointer, ...sibling }
+        _value = { $ref: `#${refNode.pointer}`, ...sibling }
       }
-      hooks?.onCrawl && hooks.onCrawl(_value, ctx)
-      return { value: _value, state, exitHook: () => { hooks?.onExit && hooks.onExit(node[key], ctx) } }
+      hooks?.onCrawl?.(_value, ctx)
+      return {
+        value: _value,
+        state,
+        exitHook: () => {
+          hooks?.onExit?.(node[key] as JsonNode, ctx)
+        },
+      }
     }
 
     // resolve reference and merge with sibling
     if (cache.has(normalized)) {
       const data = cache.get(normalized)
-      const _value = (!isObject(data) || !sibling) ? data : mergeValues(data, sibling)
-      hooks?.onCrawl && hooks.onCrawl(_value, ctx)
+      const _value =
+        !isObject(data) || !sibling ? data : mergeValues(data, sibling)
+      hooks?.onCrawl?.(_value as JsonNode, ctx)
       if (fullCrawl) {
         return { value: _value, state, exitHook }
       } else {
-        return { value: sibling, state, exitHook: () => {
-          node[key] = (!isObject(data) || !sibling) ? data : mergeValues(data, node[key])
-          exitHook()
-        } }
+        return {
+          value: sibling,
+          state,
+          exitHook: () => {
+            node[key] =
+              !isObject(data) || !sibling ? data : mergeValues(data, node[key])
+            exitHook()
+          },
+        }
       }
     } else {
       const resolved = await refResolver.resolvePointer(pointer, filePath)
 
       if (!resolved.value) {
-        hooks?.onError && hooks.onError(`Cannot resolve: ${normalized}`, ctx)
+        hooks?.onError?.(`Cannot resolve: ${normalized}`, ctx)
         return { value: { $ref: normalized, ...sibling }, state }
       }
-      
+
       // merge resolved value with silbing
       const data = !isObject(resolved.value)
         ? resolved.value
-        : sibling ? mergeValues(resolved.value, sibling) : { ...resolved.value }
+        : sibling
+          ? mergeValues(resolved.value, sibling)
+          : { ...resolved.value }
 
-      const _state = { 
+      const _state = {
         ...state,
-        refNodes: [ ...state.refNodes, { 
-          ref: normalized,
-          pointer: buildPointer(path),
-          sibling
-        }],
-        baseFile: resolved.filePath
+        refNodes: [
+          ...state.refNodes,
+          {
+            ref: normalized,
+            pointer: buildPointer(path),
+            sibling,
+          },
+        ],
+        baseFile: resolved.filePath,
       }
       // dereference resolved value merged with sibling
       const result = await hook({ ...ctx, value: data, state: _state })
 
-      return { value: data, ...result, exitHook: () => {
-        // save dereferenced result to cache if no sibling content
-        !sibling && isObject(node[key]) && cache.set(normalized, node[key])
-        result?.exitHook && result.exitHook()
-      }}
+      return {
+        value: data,
+        ...result,
+        exitHook: () => {
+          // save dereferenced result to cache if no sibling content
+          !sibling && isObject(node[key]) && cache.set(normalized, node[key])
+          result?.exitHook?.()
+        },
+      }
     }
   }
 
   return hook
 }
 
-export const dereference = async (basePath: string, resolver: Resolver, options: DereferenceOptions = {}) => {
+export const dereference = async (
+  basePath: string,
+  resolver: Resolver,
+  options: DereferenceOptions = {},
+): Promise<JsonNode> => {
   const baseRef = parseRef(basePath)
 
   const refResolver = new RefResolver(baseRef.filePath, resolver)
   const base = await refResolver.base(baseRef.pointer)
 
-  return clone(base, dereferenceHook(refResolver, options), { 
+  return clone(base, dereferenceHook(refResolver, options), {
     state: {
       refNodes: [{ ref: basePath, pointer: "" }],
-      baseFile: baseRef.filePath, 
-    }
+      baseFile: baseRef.filePath,
+    },
   })
 }

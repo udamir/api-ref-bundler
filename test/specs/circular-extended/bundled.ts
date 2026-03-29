@@ -3,9 +3,10 @@ const self = {
     thing: {
       title: "thing",
       $ref: "#/definitions/thing",
-      description: "This JSON Reference has additional properties (other than $ref). Normally, this creates a new type that extends the referenced type, but since this reference points to ITSELF, it doesn't do that.\n",
-    }
-  }
+      description:
+        "This JSON Reference has additional properties (other than $ref). Normally, this creates a new type that extends the referenced type, but since this reference points to ITSELF, it doesn't do that.\n",
+    },
+  },
 }
 
 const pet = {
@@ -13,19 +14,14 @@ const pet = {
   type: "object",
   properties: {
     age: {
-      $ref: "#/definitions/age"
+      $ref: "#/definitions/age",
     },
     name: {
-      $ref: "#/definitions/name"
+      $ref: "#/definitions/name",
     },
     species: {
       type: "string",
-      enum: [
-        "cat",
-        "dog",
-        "bird",
-        "fish"
-      ],
+      enum: ["cat", "dog", "bird", "fish"],
     },
   },
 }
@@ -33,53 +29,56 @@ const pet = {
 const ancestor = {
   definitions: {
     name: {
-      type: "string"
+      type: "string",
     },
     age: {
-      type: "number"
+      type: "number",
     },
     person: {
       title: "person",
       properties: {
         spouse: {
           $ref: "#/definitions/person",
-          description: 'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "person".\n',
+          description:
+            'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "person".\n',
         },
         pet: {
           $ref: "#/definitions/pet",
-          description: 'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "pet".\n'
+          description:
+            'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "pet".\n',
         },
         name: {
-          type: "string"
-        }
-      }
+          type: "string",
+        },
+      },
     },
-    pet
-  }
+    pet,
+  },
 }
 
 const indirect = {
   definitions: {
     name: {
-      type: "string"
+      type: "string",
     },
     age: {
-      type: "number"
+      type: "number",
     },
     parent: {
       title: "parent",
       properties: {
         name: {
-          type: "string"
+          type: "string",
         },
         children: {
           items: {
             $ref: "#/definitions/child",
-            description: 'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "child".\n',
+            description:
+              'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "child".\n',
           },
-          type: "array"
-        }
-      }
+          type: "array",
+        },
+      },
     },
     child: {
       title: "child",
@@ -87,42 +86,45 @@ const indirect = {
         parents: {
           items: {
             $ref: "#/definitions/parent",
-            description: 'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "parent".\n',
+            description:
+              'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "parent".\n',
           },
-          type: "array"
+          type: "array",
         },
         pet: {
           $ref: "#/definitions/pet",
-          description: 'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "pet".\n',
+          description:
+            'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "pet".\n',
         },
         name: {
-          type: "string"
-        }
-      }
+          type: "string",
+        },
+      },
     },
-    pet
-  }
+    pet,
+  },
 }
 
 const indirectAncestor = {
   definitions: {
     name: {
-      type: "string"
+      type: "string",
     },
     age: {
-      type: "number"
+      type: "number",
     },
     pet,
     parent: {
       title: "parent",
       properties: {
         name: {
-          type: "string"
+          type: "string",
         },
         child: {
           $ref: "#/definitions/child",
-          description: 'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "child".\n',
-        }
+          description:
+            'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "child".\n',
+        },
       },
     },
     child: {
@@ -130,23 +132,24 @@ const indirectAncestor = {
       properties: {
         pet: {
           $ref: "#/definitions/pet",
-          description: 'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "pet".\n',
+          description:
+            'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "pet".\n',
         },
         name: {
-          type: "string"
+          type: "string",
         },
         children: {
           items: {
             $ref: "#/definitions/child",
-            description: 'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "child".\n',
+            description:
+              'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "child".\n',
           },
           type: "array",
-          description: "children"
-        }
+          description: "children",
+        },
       },
-    }
-  }
+    },
+  },
 }
 
-export const bundled: any = { self, ancestor, indirect, indirectAncestor }
-
+export const bundled = { self, ancestor, indirect, indirectAncestor }

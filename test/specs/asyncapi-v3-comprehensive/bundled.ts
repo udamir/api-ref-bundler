@@ -1,273 +1,247 @@
 export default {
-  asyncapi: '3.0.0',
+  asyncapi: "3.0.0",
   info: {
-    title: 'Comprehensive AsyncAPI v3 Test',
-    version: '1.0.0',
-    description: 'Tests all component types and $ref patterns'
+    title: "Comprehensive AsyncAPI v3 Test",
+    version: "1.0.0",
+    description: "Tests all component types and $ref patterns",
   },
   servers: {
     production: {
-      host: 'api.example.com',
-      protocol: 'wss',
-      description: 'Production server',
+      host: "api.example.com",
+      protocol: "wss",
+      description: "Production server",
       variables: {
         version: {
-          $ref: '#/components/serverVariables/apiVersion'
-        }
+          $ref: "#/components/serverVariables/apiVersion",
+        },
       },
-      security: [
-        { $ref: '#/components/securitySchemes/apiKey' }
-      ],
-      tags: [
-        { $ref: '#/components/tags/production' }
-      ],
+      security: [{ $ref: "#/components/securitySchemes/apiKey" }],
+      tags: [{ $ref: "#/components/tags/production" }],
       externalDocs: {
-        $ref: '#/components/externalDocs/serverDocs'
-      }
-    }
+        $ref: "#/components/externalDocs/serverDocs",
+      },
+    },
   },
   channels: {
     UserChannel: {
-      address: '/users/{userId}',
-      description: 'User events channel',
-      servers: [
-        { $ref: '#/servers/production' }
-      ],
+      address: "/users/{userId}",
+      description: "User events channel",
+      servers: [{ $ref: "#/servers/production" }],
       parameters: {
         userId: {
-          $ref: '#/components/parameters/userId'
-        }
+          $ref: "#/components/parameters/userId",
+        },
       },
       messages: {
         UserCreated: {
           headers: {
-            $ref: '#/components/schemas/MessageHeaders'
+            $ref: "#/components/schemas/MessageHeaders",
           },
           payload: {
-            $ref: '#/components/schemas/User'
+            $ref: "#/components/schemas/User",
           },
           correlationId: {
-            $ref: '#/components/correlationIds/default'
+            $ref: "#/components/correlationIds/default",
           },
-          traits: [
-            { $ref: '#/components/messageTraits/commonHeaders' }
-          ]
+          traits: [{ $ref: "#/components/messageTraits/commonHeaders" }],
         },
         UserUpdated: {
           payload: {
-            $ref: '#/components/schemas/User'
-          }
-        }
+            $ref: "#/components/schemas/User",
+          },
+        },
       },
-      tags: [
-        { $ref: '#/components/tags/users' }
-      ],
+      tags: [{ $ref: "#/components/tags/users" }],
       externalDocs: {
-        $ref: '#/components/externalDocs/channelDocs'
-      }
-    }
+        $ref: "#/components/externalDocs/channelDocs",
+      },
+    },
   },
   operations: {
     CreateUser: {
-      action: 'send',
+      action: "send",
       channel: {
-        $ref: '#/channels/UserChannel'
+        $ref: "#/channels/UserChannel",
       },
-      messages: [
-        { $ref: '#/channels/UserChannel/messages/UserCreated' }
-      ],
-      security: [
-        { $ref: '#/components/securitySchemes/oauth2' }
-      ],
-      traits: [
-        { $ref: '#/components/operationTraits/commonOp' }
-      ],
-      tags: [
-        { $ref: '#/components/tags/users' }
-      ],
+      messages: [{ $ref: "#/channels/UserChannel/messages/UserCreated" }],
+      security: [{ $ref: "#/components/securitySchemes/oauth2" }],
+      traits: [{ $ref: "#/components/operationTraits/commonOp" }],
+      tags: [{ $ref: "#/components/tags/users" }],
       externalDocs: {
-        $ref: '#/components/externalDocs/operationDocs'
+        $ref: "#/components/externalDocs/operationDocs",
       },
       reply: {
         address: {
-          $ref: '#/components/replyAddresses/default'
+          $ref: "#/components/replyAddresses/default",
         },
         channel: {
-          $ref: '#/channels/UserChannel'
+          $ref: "#/channels/UserChannel",
         },
-        messages: [
-          { $ref: '#/channels/UserChannel/messages/UserUpdated' }
-        ]
-      }
+        messages: [{ $ref: "#/channels/UserChannel/messages/UserUpdated" }],
+      },
     },
     GetUser: {
-      action: 'receive',
+      action: "receive",
       channel: {
-        $ref: '#/channels/UserChannel'
+        $ref: "#/channels/UserChannel",
       },
-      messages: [
-        { $ref: '#/channels/UserChannel/messages/UserUpdated' }
-      ]
-    }
+      messages: [{ $ref: "#/channels/UserChannel/messages/UserUpdated" }],
+    },
   },
   components: {
     schemas: {
       User: {
-        type: 'object',
+        type: "object",
         properties: {
           id: {
-            type: 'string'
+            type: "string",
           },
           name: {
-            type: 'string'
+            type: "string",
           },
           profile: {
-            $ref: '#/components/schemas/Profile'
-          }
-        }
+            $ref: "#/components/schemas/Profile",
+          },
+        },
       },
       Profile: {
-        type: 'object',
+        type: "object",
         properties: {
           bio: {
-            type: 'string'
+            type: "string",
           },
           avatar: {
-            type: 'string'
-          }
-        }
+            type: "string",
+          },
+        },
       },
       MessageHeaders: {
-        type: 'object',
+        type: "object",
         properties: {
           correlationId: {
-            type: 'string'
+            type: "string",
           },
           timestamp: {
-            type: 'string',
-            format: 'date-time'
-          }
-        }
-      }
+            type: "string",
+            format: "date-time",
+          },
+        },
+      },
     },
     messages: {
       GenericUserMessage: {
         payload: {
-          $ref: '#/components/schemas/User'
+          $ref: "#/components/schemas/User",
         },
         correlationId: {
-          $ref: '#/components/correlationIds/default'
-        }
-      }
+          $ref: "#/components/correlationIds/default",
+        },
+      },
     },
     securitySchemes: {
       apiKey: {
-        type: 'httpApiKey',
-        in: 'header',
-        name: 'X-API-Key'
+        type: "httpApiKey",
+        in: "header",
+        name: "X-API-Key",
       },
       oauth2: {
-        type: 'oauth2',
+        type: "oauth2",
         flows: {
           implicit: {
-            authorizationUrl: 'https://example.com/oauth',
+            authorizationUrl: "https://example.com/oauth",
             scopes: {
-              write: 'Write access',
-              read: 'Read access'
-            }
-          }
-        }
-      }
+              write: "Write access",
+              read: "Read access",
+            },
+          },
+        },
+      },
     },
     serverVariables: {
       apiVersion: {
-        default: 'v1',
-        enum: ['v1', 'v2'],
-        description: 'API version'
-      }
+        default: "v1",
+        enum: ["v1", "v2"],
+        description: "API version",
+      },
     },
     parameters: {
       userId: {
-        description: 'User identifier',
+        description: "User identifier",
         schema: {
-          type: 'string'
-        }
-      }
+          type: "string",
+        },
+      },
     },
     correlationIds: {
       default: {
-        location: '$message.header#/correlationId',
-        description: 'Default correlation ID'
-      }
+        location: "$message.header#/correlationId",
+        description: "Default correlation ID",
+      },
     },
     operationTraits: {
       commonOp: {
-        description: 'Common operation trait',
-        tags: [
-          { $ref: '#/components/tags/common' }
-        ]
-      }
+        description: "Common operation trait",
+        tags: [{ $ref: "#/components/tags/common" }],
+      },
     },
     messageTraits: {
       commonHeaders: {
         headers: {
-          $ref: '#/components/schemas/MessageHeaders'
+          $ref: "#/components/schemas/MessageHeaders",
         },
         correlationId: {
-          $ref: '#/components/correlationIds/default'
-        }
-      }
+          $ref: "#/components/correlationIds/default",
+        },
+      },
     },
     replies: {
       default: {
         channel: {
-          $ref: '#/channels/UserChannel'
+          $ref: "#/channels/UserChannel",
         },
-        messages: [
-          { $ref: '#/channels/UserChannel/messages/UserUpdated' }
-        ]
-      }
+        messages: [{ $ref: "#/channels/UserChannel/messages/UserUpdated" }],
+      },
     },
     replyAddresses: {
       default: {
-        location: '$message.header#/replyTo',
-        description: 'Default reply address'
-      }
+        location: "$message.header#/replyTo",
+        description: "Default reply address",
+      },
     },
     tags: {
       production: {
-        name: 'production',
-        description: 'Production environment'
+        name: "production",
+        description: "Production environment",
       },
       users: {
-        name: 'users',
-        description: 'User operations',
+        name: "users",
+        description: "User operations",
         externalDocs: {
-          $ref: '#/components/externalDocs/tagDocs'
-        }
+          $ref: "#/components/externalDocs/tagDocs",
+        },
       },
       common: {
-        name: 'common',
-        description: 'Common tag'
-      }
+        name: "common",
+        description: "Common tag",
+      },
     },
     externalDocs: {
       serverDocs: {
-        url: 'https://docs.example.com/servers',
-        description: 'Server documentation'
+        url: "https://docs.example.com/servers",
+        description: "Server documentation",
       },
       channelDocs: {
-        url: 'https://docs.example.com/channels',
-        description: 'Channel documentation'
+        url: "https://docs.example.com/channels",
+        description: "Channel documentation",
       },
       operationDocs: {
-        url: 'https://docs.example.com/operations',
-        description: 'Operation documentation'
+        url: "https://docs.example.com/operations",
+        description: "Operation documentation",
       },
       tagDocs: {
-        url: 'https://docs.example.com/tags',
-        description: 'Tag documentation'
-      }
-    }
-  }
+        url: "https://docs.example.com/tags",
+        description: "Tag documentation",
+      },
+    },
+  },
 }

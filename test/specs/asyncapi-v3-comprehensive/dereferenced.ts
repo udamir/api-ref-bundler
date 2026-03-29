@@ -1,174 +1,174 @@
 // Helper objects for reuse (simulating reference equality after dereference)
 const Profile = {
-  type: 'object',
+  type: "object",
   properties: {
-    bio: { type: 'string' },
-    avatar: { type: 'string' }
-  }
+    bio: { type: "string" },
+    avatar: { type: "string" },
+  },
 }
 
 const User = {
-  type: 'object',
+  type: "object",
   properties: {
-    id: { type: 'string' },
-    name: { type: 'string' },
-    profile: Profile
-  }
+    id: { type: "string" },
+    name: { type: "string" },
+    profile: Profile,
+  },
 }
 
 const MessageHeaders = {
-  type: 'object',
+  type: "object",
   properties: {
-    correlationId: { type: 'string' },
-    timestamp: { type: 'string', format: 'date-time' }
-  }
+    correlationId: { type: "string" },
+    timestamp: { type: "string", format: "date-time" },
+  },
 }
 
 const correlationIdDefault = {
-  location: '$message.header#/correlationId',
-  description: 'Default correlation ID'
+  location: "$message.header#/correlationId",
+  description: "Default correlation ID",
 }
 
 const apiKey = {
-  type: 'httpApiKey',
-  in: 'header',
-  name: 'X-API-Key'
+  type: "httpApiKey",
+  in: "header",
+  name: "X-API-Key",
 }
 
 const oauth2 = {
-  type: 'oauth2',
+  type: "oauth2",
   flows: {
     implicit: {
-      authorizationUrl: 'https://example.com/oauth',
+      authorizationUrl: "https://example.com/oauth",
       scopes: {
-        write: 'Write access',
-        read: 'Read access'
-      }
-    }
-  }
+        write: "Write access",
+        read: "Read access",
+      },
+    },
+  },
 }
 
 const apiVersion = {
-  default: 'v1',
-  enum: ['v1', 'v2'],
-  description: 'API version'
+  default: "v1",
+  enum: ["v1", "v2"],
+  description: "API version",
 }
 
 const parameterUserId = {
-  description: 'User identifier',
-  schema: { type: 'string' }
+  description: "User identifier",
+  schema: { type: "string" },
 }
 
 const serverDocs = {
-  url: 'https://docs.example.com/servers',
-  description: 'Server documentation'
+  url: "https://docs.example.com/servers",
+  description: "Server documentation",
 }
 
 const channelDocs = {
-  url: 'https://docs.example.com/channels',
-  description: 'Channel documentation'
+  url: "https://docs.example.com/channels",
+  description: "Channel documentation",
 }
 
 const operationDocs = {
-  url: 'https://docs.example.com/operations',
-  description: 'Operation documentation'
+  url: "https://docs.example.com/operations",
+  description: "Operation documentation",
 }
 
 const tagDocs = {
-  url: 'https://docs.example.com/tags',
-  description: 'Tag documentation'
+  url: "https://docs.example.com/tags",
+  description: "Tag documentation",
 }
 
 const tagProduction = {
-  name: 'production',
-  description: 'Production environment'
+  name: "production",
+  description: "Production environment",
 }
 
 const tagUsers = {
-  name: 'users',
-  description: 'User operations',
-  externalDocs: tagDocs
+  name: "users",
+  description: "User operations",
+  externalDocs: tagDocs,
 }
 
 const tagCommon = {
-  name: 'common',
-  description: 'Common tag'
+  name: "common",
+  description: "Common tag",
 }
 
 const replyAddressDefault = {
-  location: '$message.header#/replyTo',
-  description: 'Default reply address'
+  location: "$message.header#/replyTo",
+  description: "Default reply address",
 }
 
 const messageTraitCommonHeaders = {
   headers: MessageHeaders,
-  correlationId: correlationIdDefault
+  correlationId: correlationIdDefault,
 }
 
 const operationTraitCommonOp = {
-  description: 'Common operation trait',
-  tags: [tagCommon]
+  description: "Common operation trait",
+  tags: [tagCommon],
 }
 
 const serverProduction = {
-  host: 'api.example.com',
-  protocol: 'wss',
-  description: 'Production server',
+  host: "api.example.com",
+  protocol: "wss",
+  description: "Production server",
   variables: {
-    version: apiVersion
+    version: apiVersion,
   },
   security: [apiKey],
   tags: [tagProduction],
-  externalDocs: serverDocs
+  externalDocs: serverDocs,
 }
 
 const messageUserCreated = {
   headers: MessageHeaders,
   payload: User,
   correlationId: correlationIdDefault,
-  traits: [messageTraitCommonHeaders]
+  traits: [messageTraitCommonHeaders],
 }
 
 const messageUserUpdated = {
-  payload: User
+  payload: User,
 }
 
 const channelUserChannel = {
-  address: '/users/{userId}',
-  description: 'User events channel',
+  address: "/users/{userId}",
+  description: "User events channel",
   servers: [serverProduction],
   parameters: {
-    userId: parameterUserId
+    userId: parameterUserId,
   },
   messages: {
     UserCreated: messageUserCreated,
-    UserUpdated: messageUserUpdated
+    UserUpdated: messageUserUpdated,
   },
   tags: [tagUsers],
-  externalDocs: channelDocs
+  externalDocs: channelDocs,
 }
 
 const replyDefault = {
   channel: channelUserChannel,
-  messages: [messageUserUpdated]
+  messages: [messageUserUpdated],
 }
 
 export default {
-  asyncapi: '3.0.0',
+  asyncapi: "3.0.0",
   info: {
-    title: 'Comprehensive AsyncAPI v3 Test',
-    version: '1.0.0',
-    description: 'Tests all component types and $ref patterns'
+    title: "Comprehensive AsyncAPI v3 Test",
+    version: "1.0.0",
+    description: "Tests all component types and $ref patterns",
   },
   servers: {
-    production: serverProduction
+    production: serverProduction,
   },
   channels: {
-    UserChannel: channelUserChannel
+    UserChannel: channelUserChannel,
   },
   operations: {
     CreateUser: {
-      action: 'send',
+      action: "send",
       channel: channelUserChannel,
       messages: [messageUserCreated],
       security: [oauth2],
@@ -178,62 +178,62 @@ export default {
       reply: {
         address: replyAddressDefault,
         channel: channelUserChannel,
-        messages: [messageUserUpdated]
-      }
+        messages: [messageUserUpdated],
+      },
     },
     GetUser: {
-      action: 'receive',
+      action: "receive",
       channel: channelUserChannel,
-      messages: [messageUserUpdated]
-    }
+      messages: [messageUserUpdated],
+    },
   },
   components: {
     schemas: {
       User: User,
       Profile: Profile,
-      MessageHeaders: MessageHeaders
+      MessageHeaders: MessageHeaders,
     },
     messages: {
       GenericUserMessage: {
         payload: User,
-        correlationId: correlationIdDefault
-      }
+        correlationId: correlationIdDefault,
+      },
     },
     securitySchemes: {
       apiKey: apiKey,
-      oauth2: oauth2
+      oauth2: oauth2,
     },
     serverVariables: {
-      apiVersion: apiVersion
+      apiVersion: apiVersion,
     },
     parameters: {
-      userId: parameterUserId
+      userId: parameterUserId,
     },
     correlationIds: {
-      default: correlationIdDefault
+      default: correlationIdDefault,
     },
     operationTraits: {
-      commonOp: operationTraitCommonOp
+      commonOp: operationTraitCommonOp,
     },
     messageTraits: {
-      commonHeaders: messageTraitCommonHeaders
+      commonHeaders: messageTraitCommonHeaders,
     },
     replies: {
-      default: replyDefault
+      default: replyDefault,
     },
     replyAddresses: {
-      default: replyAddressDefault
+      default: replyAddressDefault,
     },
     tags: {
       production: tagProduction,
       users: tagUsers,
-      common: tagCommon
+      common: tagCommon,
     },
     externalDocs: {
       serverDocs: serverDocs,
       channelDocs: channelDocs,
       operationDocs: operationDocs,
-      tagDocs: tagDocs
-    }
-  }
+      tagDocs: tagDocs,
+    },
+  },
 }

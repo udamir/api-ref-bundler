@@ -1,121 +1,119 @@
 // Expected output after bundle() - internal refs remain as $refs
 export default {
-  asyncapi: '3.0.0',
+  asyncapi: "3.0.0",
   info: {
-    title: 'AsyncAPI v3 Circular Schema Test',
-    version: '1.0.0',
-    description: 'Tests circular $ref handling in AsyncAPI v3'
+    title: "AsyncAPI v3 Circular Schema Test",
+    version: "1.0.0",
+    description: "Tests circular $ref handling in AsyncAPI v3",
   },
   channels: {
     UserChannel: {
-      address: '/users/{userId}',
+      address: "/users/{userId}",
       messages: {
         UserMessage: {
           payload: {
-            $ref: '#/components/schemas/User'
-          }
-        }
-      }
-    }
+            $ref: "#/components/schemas/User",
+          },
+        },
+      },
+    },
   },
   operations: {
     GetUser: {
-      action: 'receive',
+      action: "receive",
       channel: {
-        $ref: '#/channels/UserChannel'
+        $ref: "#/channels/UserChannel",
       },
-      messages: [
-        { $ref: '#/channels/UserChannel/messages/UserMessage' }
-      ]
-    }
+      messages: [{ $ref: "#/channels/UserChannel/messages/UserMessage" }],
+    },
   },
   components: {
     schemas: {
       User: {
-        type: 'object',
+        type: "object",
         properties: {
           id: {
-            type: 'string'
+            type: "string",
           },
           name: {
-            type: 'string'
+            type: "string",
           },
           friend: {
-            $ref: '#/components/schemas/User'
+            $ref: "#/components/schemas/User",
           },
           orders: {
-            type: 'array',
+            type: "array",
             items: {
-              $ref: '#/components/schemas/Order'
-            }
-          }
-        }
+              $ref: "#/components/schemas/Order",
+            },
+          },
+        },
       },
       Order: {
-        type: 'object',
+        type: "object",
         properties: {
           orderId: {
-            type: 'string'
+            type: "string",
           },
           amount: {
-            type: 'number'
+            type: "number",
           },
           customer: {
-            $ref: '#/components/schemas/User'
+            $ref: "#/components/schemas/User",
           },
           items: {
-            type: 'array',
+            type: "array",
             items: {
-              $ref: '#/components/schemas/OrderItem'
-            }
-          }
-        }
+              $ref: "#/components/schemas/OrderItem",
+            },
+          },
+        },
       },
       OrderItem: {
-        type: 'object',
+        type: "object",
         properties: {
           productId: {
-            type: 'string'
+            type: "string",
           },
           quantity: {
-            type: 'integer'
+            type: "integer",
           },
           product: {
-            $ref: '#/components/schemas/Product'
-          }
-        }
+            $ref: "#/components/schemas/Product",
+          },
+        },
       },
       Product: {
-        type: 'object',
+        type: "object",
         properties: {
           id: {
-            type: 'string'
+            type: "string",
           },
           name: {
-            type: 'string'
+            type: "string",
           },
           reviews: {
-            type: 'array',
+            type: "array",
             items: {
-              $ref: '#/components/schemas/Review'
-            }
-          }
-        }
+              $ref: "#/components/schemas/Review",
+            },
+          },
+        },
       },
       Review: {
-        type: 'object',
+        type: "object",
         properties: {
           rating: {
-            type: 'integer'
+            type: "integer",
           },
           comment: {
-            type: 'string'
+            type: "string",
           },
           reviewer: {
-            $ref: '#/components/schemas/User'
-          }
-        }
-      }
-    }
-  }
+            $ref: "#/components/schemas/User",
+          },
+        },
+      },
+    },
+  },
 }
