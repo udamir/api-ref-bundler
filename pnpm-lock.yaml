@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       json-crawl:
-        specifier: 0.4.2
-        version: 0.4.2
+        specifier: 0.5.3
+        version: 0.5.3
     devDependencies:
       '@biomejs/biome':
         specifier: ^2.4.9
@@ -576,8 +576,8 @@ packages:
     resolution: {integrity: sha512-qQKT4zQxXl8lLwBtHMWwaTcGfFOZviOJet3Oy/xmGk2gZH677CJM9EvtfdSkgWcATZhj/55JZ0rmy3myCT5lsA==}
     hasBin: true
 
-  json-crawl@0.4.2:
-    resolution: {integrity: sha512-MOKk9cjtpMrP4H1DmG+PtS7aFWg9OuSqxc/wpFcOE++yVnD5Bi5iKoXD6oqs+kltRwJRgZBYMozRNpQpxD/TJw==}
+  json-crawl@0.5.3:
+    resolution: {integrity: sha512-BEjjCw8c7SxzNK4orhlWD5cXQh8vCk2LqDr4WgQq4CV+5dvopeYwt1Tskg67SuSLKvoFH5g0yuYtg7rcfKV6YA==}
     engines: {node: '>=14.0.0'}
 
   json-schema-traverse@1.0.0:
@@ -1447,7 +1447,7 @@ snapshots:
     dependencies:
       argparse: 2.0.1
 
-  json-crawl@0.4.2: {}
+  json-crawl@0.5.3: {}
 
   json-schema-traverse@1.0.0: {}
 
