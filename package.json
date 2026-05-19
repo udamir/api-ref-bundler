@@ -54,6 +54,6 @@
     "node": ">=20.19.0"
   },
   "dependencies": {
-    "json-crawl": "0.4.2"
+    "json-crawl": "0.5.3"
   }
 }
