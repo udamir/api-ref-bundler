@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it } from "vite-plus/test"
 import { bundle, dereference } from "../src"
 import { resolver } from "./helpers"
 
@@ -7,7 +7,7 @@ import circularExtended from "./specs/circular-extended"
 describe("Schema with circular $refs that extend each other", () => {
   describe("$ref to self", () => {
     it('should not dereference circular $refs with sibling content if "enableCircular" is true', async () => {
-      const schema = await dereference(
+      const schema: any = await dereference(
         "specs/circular-extended/circular-extended-self.yaml",
         resolver,
         { enableCircular: true },
@@ -16,7 +16,7 @@ describe("Schema with circular $refs that extend each other", () => {
     })
 
     it("should dereference successfully and ignore circular $refs", async () => {
-      const schema = await dereference(
+      const schema: any = await dereference(
         "specs/circular-extended/circular-extended-self.yaml",
         resolver,
       )
@@ -34,7 +34,7 @@ describe("Schema with circular $refs that extend each other", () => {
 
   describe("$ref to ancestor", () => {
     it('should dereference successfully circular $refs if "enableCircular" is true', async () => {
-      const schema = await dereference(
+      const schema: any = await dereference(
         "specs/circular-extended/circular-extended-ancestor.yaml",
         resolver,
         { enableCircular: true },
@@ -49,7 +49,7 @@ describe("Schema with circular $refs that extend each other", () => {
     })
 
     it("should dereference successfully and ignore circular $refs", async () => {
-      const schema = await dereference(
+      const schema: any = await dereference(
         "specs/circular-extended/circular-extended-ancestor.yaml",
         resolver,
       )
@@ -67,7 +67,7 @@ describe("Schema with circular $refs that extend each other", () => {
 
   describe("indirect circular $refs", () => {
     it('should dereference successfully circular $refs if "enableCircular" is true', async () => {
-      const schema = await dereference(
+      const schema: any = await dereference(
         "specs/circular-extended/circular-extended-indirect.yaml",
         resolver,
         { enableCircular: true },
@@ -85,7 +85,7 @@ describe("Schema with circular $refs that extend each other", () => {
     })
 
     it("should dereference successfully and ignore circular $refs", async () => {
-      const schema = await dereference(
+      const schema: any = await dereference(
         "specs/circular-extended/circular-extended-indirect.yaml",
         resolver,
       )
@@ -103,7 +103,7 @@ describe("Schema with circular $refs that extend each other", () => {
 
   describe("indirect circular and ancestor $refs", () => {
     it('should dereference successfully circular $refs if "enableCircular" is true', async () => {
-      const schema = await dereference(
+      const schema: any = await dereference(
         "specs/circular-extended/circular-extended-indirect-ancestor.yaml",
         resolver,
         { enableCircular: true },
@@ -124,7 +124,7 @@ describe("Schema with circular $refs that extend each other", () => {
     })
 
     it("should dereference successfully and ignore circular $refs", async () => {
-      const schema = await dereference(
+      const schema: any = await dereference(
         "specs/circular-extended/circular-extended-indirect-ancestor.yaml",
         resolver,
       )

@@ -20,10 +20,8 @@ const parametersRefMap: RefMapRules = {
 const responsesRefMap: RefMapRules = {
   "/*": {
     "#": swaggerRefRule.responses,
-    "/*": {
-      "/schema": schemaRefMap(swaggerRefRule.definitions),
-      "/headers": parametersRefMap,
-    },
+    "/schema": schemaRefMap(swaggerRefRule.definitions),
+    "/headers": parametersRefMap,
   },
 }
 

@@ -1,59 +1,65 @@
 {
   "name": "api-ref-bundler",
-  "version": "0.5.1",
+  "version": "1.0.0",
   "description": "Bundle all external $ref in Json based API document into single document",
-  "module": "dist/index.mjs",
-  "main": "dist/index.cjs",
-  "typings": "dist/index.d.ts",
-  "files": [
-    "dist"
+  "keywords": [
+    "api",
+    "asyncapi",
+    "bundler",
+    "dereference",
+    "jsonschema",
+    "openapi",
+    "ref",
+    "swagger"
   ],
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs"
-    }
-  },
-  "scripts": {
-    "build": "vite build",
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage",
-    "lint": "biome check",
-    "lint:fix": "biome check --write",
-    "prepublish": "pnpm lint && pnpm build && pnpm test"
-  },
+  "license": "MIT",
+  "author": "Damir Yusipov",
   "repository": {
     "type": "git",
     "url": "https://github.com/udamir/api-ref-bundler"
   },
-  "keywords": [
-    "jsonschema",
-    "openapi",
-    "swagger",
-    "asyncapi",
-    "api",
-    "ref",
-    "bundler",
-    "dereference"
+  "files": [
+    "dist"
   ],
-  "author": "Damir Yusipov",
-  "license": "MIT",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "typings": "dist/index.d.cts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "vp pack",
+    "test": "vp test run",
+    "test:coverage": "vp test run --coverage",
+    "typecheck": "tsc --noEmit",
+    "lint": "vp check",
+    "lint:fix": "vp check --fix",
+    "prepublish": "pnpm lint && pnpm build && pnpm test"
+  },
+  "dependencies": {
+    "json-crawl": "1.2.0"
+  },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.9",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^25.5.0",
-    "@vitest/coverage-v8": "^4.1.2",
+    "@vitest/coverage-v8": "^5.1.0",
     "js-yaml": "^4.1.1",
-    "typescript": "^6.0.2",
-    "vite": "^8.0.3",
-    "vite-plugin-dts": "^4.5.4",
-    "vitest": "^4.1.2"
+    "typescript": "^7.0.2",
+    "vite-plus": "^1.7.0",
+    "vitest": "^5.1.0"
   },
   "engines": {
     "node": ">=20.19.0"
   },
-  "dependencies": {
-    "json-crawl": "0.4.2"
-  }
+  "packageManager": "pnpm@12.21.0"
 }

@@ -1,5 +1,4 @@
-/** biome-ignore-all lint/suspicious/noExplicitAny: test file */
-import { describe, expect, it } from "vitest"
+import { describe, expect, it } from "vite-plus/test"
 import { bundle, dereference } from "../src"
 import { resolver } from "./helpers"
 
@@ -452,7 +451,7 @@ describe("AsyncAPI v3 tests", () => {
     })
 
     describe("Error handling (EDG-ERR-*)", () => {
-      it("should preserve invalid refs during bundle without error", async () => {
+      it("should preserve invalid refs during bundle and report them", async () => {
         const errors: string[] = []
         const schema: any = await bundle(
           "specs/asyncapi-v3-edge/error-cases.yaml",
@@ -464,8 +463,9 @@ describe("AsyncAPI v3 tests", () => {
           },
         )
 
-        // Bundle does not call onError for unresolved internal refs
-        expect(errors.length).toBe(0)
+        // 1.0.0: bundle reports unresolved internal refs like dereference does
+        expect(errors.some((e) => e.includes("NonExistentSchema"))).toBe(true)
+        expect(errors.some((e) => e.includes("NonExistentChannel"))).toBe(true)
 
         // Invalid refs are preserved as-is
         expect(

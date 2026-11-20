@@ -1,13 +1,52 @@
 import { isArray, isObject, type JsonPath } from "json-crawl"
 
-import { normalize } from "./normalize"
+import {
+  encodeTokens,
+  type ParsedRef,
+  parseTokens,
+  relativePath,
+  resolveDocumentId,
+  splitRef,
+} from "./ref"
 import type { JsonType } from "./types"
 
-const UNSAFE_PATH_KEYS = new Set(["__proto__", "constructor", "prototype"])
+export { relativePath }
+
+export const UNSAFE_PATH_KEYS = new Set([
+  "__proto__",
+  "constructor",
+  "prototype",
+])
+
+export const isUnsafeKey = (key: unknown): boolean =>
+  typeof key === "string" && UNSAFE_PATH_KEYS.has(key)
+
+/**
+ * The property key a path segment addresses, coerced once: a non-string segment (e.g. `["__proto__"]`)
+ * is converted the way a property access would convert it, so the safety check sees the real key.
+ */
+const toPropertyKey = (segment: unknown): string | number =>
+  typeof segment === "number" ? segment : String(segment)
+
+/** Writes an own data property: a `__proto__` key stays data instead of replacing the prototype. */
+export const setOwn = (
+  obj: Record<string | number, unknown>,
+  key: string | number,
+  value: unknown,
+): void => {
+  if (key === "__proto__") {
+    Object.defineProperty(obj, key, {
+      value,
+      writable: true,
+      enumerable: true,
+      configurable: true,
+    })
+  } else {
+    obj[key] = value
+  }
+}
 
 const pathMask = {
-  slash: /\//g,
-  tilde: /~/g,
   escapedSlash: /~1/g,
   escapedTilde: /~0/g,
 }
@@ -50,16 +89,22 @@ export const calcJsonType = (data: Record<string, unknown>): JsonType => {
   return "unknown"
 }
 
-export const parseRef = ($ref: string, basePath = "") => {
-  const [sourcePath = basePath, ref] = $ref.split("#")
+/**
+ * Parses a `$ref` string against the id of the document it appears in.
+ * `filePath` is the canonical document id, `pointer` the fragment as written,
+ * `normalized` the canonical reference string and `tokens` the decoded RFC 6901
+ * tokens (`undefined` when the fragment is not a valid JSON pointer).
+ */
+export const parseRef = ($ref: string, basePath = ""): ParsedRef => {
+  const [sourcePath, pointer] = splitRef($ref)
 
-  const filePath = validURL(sourcePath)
-    ? new URL(sourcePath).href
-    : relativePath(sourcePath, basePath)
-  const pointer = !ref || ref === "/" ? "" : ref
+  const filePath = resolveDocumentId(sourcePath, basePath)
   const normalized = createRef(filePath, pointer)
+  const tokens = parseTokens(pointer)
 
-  return { filePath, pointer, normalized }
+  return tokens
+    ? { filePath, pointer, normalized, tokens }
+    : { filePath, pointer, normalized }
 }
 
 export const createRef = (basePath?: string, pointer?: string): string => {
@@ -67,18 +112,6 @@ export const createRef = (basePath?: string, pointer?: string): string => {
     return !pointer ? "#" : `#${pointer}`
   } else {
     return `${basePath}${!pointer ? "" : `#${pointer}`}`
-  }
-}
-
-export const relativePath = (path: string, basePath?: string) => {
-  if (!basePath) {
-    return normalize(path)
-  } else if (!path) {
-    return normalize(basePath)
-  } else {
-    const base = basePath.split("/")
-    base[base.length - 1] = path
-    return normalize(base.join("/"))
   }
 }
 
@@ -99,21 +132,54 @@ export const isJsonSchema = (value: Record<string, unknown>): boolean => {
 export const isBasicJsonSchema = (value: Record<string, unknown>): boolean => {
   return (
     typeof value === "object" &&
-    ("type" in value || "definitions" in value || "properties" in value)
+    value !== null &&
+    ("type" in value ||
+      "definitions" in value ||
+      "properties" in value ||
+      "$schema" in value ||
+      "$defs" in value)
   )
 }
 
+/** Draft 2019-09 / 2020-12 documents (by `$schema` or an existing `$defs`) use `/$defs`. */
+export const isModernJsonSchema = (value: unknown): boolean => {
+  if (!isObject(value) || Array.isArray(value)) {
+    return false
+  }
+  if (Object.hasOwn(value, "$defs")) {
+    return true
+  }
+  const schema = value.$schema
+  return (
+    typeof schema === "string" &&
+    /json-schema\.org\/draft\/(2019-09|2020-12)\//.test(schema)
+  )
+}
+
+/**
+ * RFC 6901 pointer → tokens (percent-decoding first, then `~1`/`~0`).
+ * A fragment without a leading `/` is parsed leniently (first segment dropped) to keep
+ * the historical behaviour of this utility; use `parseRef(...).tokens` for strict parsing.
+ */
 export const parsePointer = (pointer: string): string[] => {
+  const strict = parseTokens(pointer)
+  if (strict) {
+    return strict
+  }
   return pointer
     .split("/")
-    .map((i) =>
-      decodeURIComponent(
-        i
-          .replace(pathMask.escapedSlash, "/")
-          .replace(pathMask.escapedTilde, "~"),
-      ),
-    )
     .slice(1)
+    .map((i) => {
+      let token = i
+      try {
+        token = decodeURIComponent(token)
+      } catch {
+        // keep the raw token
+      }
+      return token
+        .replace(pathMask.escapedSlash, "/")
+        .replace(pathMask.escapedTilde, "~")
+    })
 }
 
 export const buildRef = (path: JsonPath, fileName = ""): string => {
@@ -123,21 +189,7 @@ export const buildRef = (path: JsonPath, fileName = ""): string => {
   return `${fileName}#${buildPointer(path)}`
 }
 
-export const buildPointer = (path: JsonPath): string => {
-  if (!path.length) {
-    return ""
-  }
-  return (
-    "/" +
-    path
-      .map((i) =>
-        encodeURIComponent(
-          String(i).replace(pathMask.tilde, "~0").replace(pathMask.slash, "~1"),
-        ),
-      )
-      .join("/")
-  )
-}
+export const buildPointer = (path: JsonPath): string => encodeTokens(path)
 
 export const mergeValues = (value: unknown, patch: unknown) => {
   if (isArray(value) && Array.isArray(patch)) {
@@ -145,7 +197,14 @@ export const mergeValues = (value: unknown, patch: unknown) => {
   } else if (isObject(value) && isObject(patch)) {
     const result = { ...value }
     for (const key of Object.keys(patch)) {
-      result[key] = mergeValues(result[key], patch[key])
+      setOwn(
+        result,
+        key,
+        mergeValues(
+          Object.hasOwn(result, key) ? result[key] : undefined,
+          patch[key],
+        ),
+      )
     }
     return result
   } else {
@@ -155,8 +214,9 @@ export const mergeValues = (value: unknown, patch: unknown) => {
 
 export const getValueByPath = (obj: object, path: JsonPath) => {
   let value = obj
-  for (const key of path) {
-    if (typeof key === "string" && UNSAFE_PATH_KEYS.has(key)) {
+  for (const segment of path) {
+    const key = toPropertyKey(segment)
+    if (isUnsafeKey(key)) {
       return undefined
     }
     if (Array.isArray(value)) {
@@ -165,7 +225,7 @@ export const getValueByPath = (obj: object, path: JsonPath) => {
         return undefined
       }
       value = value[index]
-    } else if (isObject(value) && key in value) {
+    } else if (isObject(value) && Object.hasOwn(value, key)) {
       value = value[key]
     } else {
       return undefined
@@ -187,17 +247,17 @@ export const setValueByPath = (
     return
   }
 
-  const key = path[i]
-  if (typeof key === "string" && UNSAFE_PATH_KEYS.has(key)) {
+  const key = toPropertyKey(path[i])
+  if (isUnsafeKey(key)) {
     return
   }
-  if (typeof obj[key] !== "object") {
-    obj[key] = {}
-  }
-
   if (i === path.length - 1) {
-    obj[key] = value
+    setOwn(obj, key, value)
   } else {
+    const child = Object.hasOwn(obj, key) ? obj[key] : undefined
+    if (typeof child !== "object" || child === null) {
+      setOwn(obj, key, {})
+    }
     setValueByPath(
       obj[key] as Record<string | number, unknown>,
       path,
