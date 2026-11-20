@@ -11,3 +11,4 @@ coverage
 .claude
 claude.md
 .backlog
+.vitest/

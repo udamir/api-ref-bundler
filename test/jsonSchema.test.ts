@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it } from "vite-plus/test"
 import { bundle } from "../src/bundle"
 import { resolver } from "./helpers"
 
@@ -24,25 +24,35 @@ describe("Complex bundle test", () => {
       })
     })
 
+    // 1.0.0 (RB-06): a hoisted document keeps its own `definitions`, so
+    // sub-pointers into it are addressed through its slot (`#/definitions/baz/definitions/World`)
+    // instead of being hoisted a second time under a renamed key (`World1`).
     it("bar.json should be bundled", async () => {
       const bar = await bundle("specs/circular-schema/bar.json", resolver)
       expect(bar.properties.hello).toMatchObject({
-        $ref: "#/definitions/World1",
+        $ref: "#/definitions/baz/definitions/World",
       })
       expect(bar.properties.new).toMatchObject({
-        $ref: "#/definitions/New",
+        $ref: "#/definitions/baz/definitions/New",
         title: "bar",
       })
-      expect(bar.definitions.World1).toMatchObject({ type: "string" })
+      expect(bar.definitions.World).toMatchObject({ type: "number" })
       expect(bar.definitions.baz).toMatchObject({
         type: "object",
         title: "baz",
         properties: {
           hello: {
-            $ref: "#/definitions/World1",
+            $ref: "#/definitions/baz/definitions/World",
           },
           new: {
-            $ref: "#/definitions/New",
+            $ref: "#/definitions/baz/definitions/New",
+          },
+        },
+        definitions: {
+          World: { type: "string" },
+          New: {
+            $ref: "#/definitions/foo",
+            description: "sibling description",
           },
         },
       })
@@ -53,7 +63,7 @@ describe("Complex bundle test", () => {
             type: "string",
           },
           new: {
-            $ref: "#/definitions/New",
+            $ref: "#/definitions/baz/definitions/New",
           },
           baz: {
             $ref: "#/definitions/baz",
@@ -64,10 +74,14 @@ describe("Complex bundle test", () => {
 
     it("foo.json should be bundled", async () => {
       const foo = await bundle("specs/circular-schema/foo.json", resolver)
-      expect(foo.properties.new).toMatchObject({ $ref: "#/definitions/New" })
+      expect(foo.properties.new).toMatchObject({
+        $ref: "#/definitions/baz/definitions/New",
+      })
       expect(foo.properties.baz).toMatchObject({ $ref: "#/definitions/baz" })
-      expect(foo.definitions.World).toMatchObject({ type: "string" })
-      expect(foo.definitions.New).toMatchObject({
+      expect(foo.definitions.baz.definitions.World).toMatchObject({
+        type: "string",
+      })
+      expect(foo.definitions.baz.definitions.New).toMatchObject({
         $ref: "#",
         description: "sibling description",
       })
@@ -75,10 +89,10 @@ describe("Complex bundle test", () => {
         type: "object",
         properties: {
           hello: {
-            $ref: "#/definitions/World",
+            $ref: "#/definitions/baz/definitions/World",
           },
           new: {
-            $ref: "#/definitions/New",
+            $ref: "#/definitions/baz/definitions/New",
           },
         },
       })

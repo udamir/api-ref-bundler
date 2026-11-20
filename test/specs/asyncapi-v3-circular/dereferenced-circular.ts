@@ -1,5 +1,4 @@
 // Expected output after dereference() with enableCircular: true
-/** biome-ignore-all lint/suspicious/noExplicitAny: test file */
 // Circular refs become actual JavaScript object references
 
 // Build the schema objects with circular references

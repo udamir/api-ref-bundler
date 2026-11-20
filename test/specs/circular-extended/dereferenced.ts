@@ -160,6 +160,9 @@ const indirect = {
   },
 }
 
+// 1.0.0 (RB-24): a target that is already being
+// materialised on the current path is a cycle, so the nested `child` (with its sibling description) is
+// cut at `#/definitions/parent/properties/child` instead of being expanded one more level as in 0.5.x.
 const indirectAncestor = {
   definitions: {
     pet,
@@ -170,13 +173,11 @@ const indirectAncestor = {
           type: "string",
         },
         child: {
+          title: "child",
           description:
             'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "child".\n',
-          title: "child",
           properties: {
             pet: {
-              description:
-                'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "pet".\n',
               title: "pet",
               type: "object",
               properties: pet.properties,
@@ -186,31 +187,11 @@ const indirectAncestor = {
             },
             children: {
               items: {
+                $ref: "#/definitions/parent/properties/child",
                 description:
                   'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "child".\n',
-                title: "child",
-                properties: {
-                  pet: {
-                    description:
-                      'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "pet".\n',
-                    title: "pet",
-                    type: "object",
-                    properties: pet.properties,
-                  },
-                  name: {
-                    type: "string",
-                  },
-                  children: {
-                    items: {
-                      $ref: "#/definitions/parent/properties/child/properties/children/items",
-                    },
-                    type: "array",
-                    description: "children",
-                  },
-                },
               },
               type: "array",
-              description: "children",
             },
           },
         },
@@ -220,8 +201,6 @@ const indirectAncestor = {
       title: "child",
       properties: {
         pet: {
-          description:
-            'This JSON Reference has additional properties (other than $ref). This creates a new type that extends "pet".\n',
           title: "pet",
           type: "object",
           properties: pet.properties,
@@ -234,7 +213,6 @@ const indirectAncestor = {
             $ref: "#/definitions/child",
           },
           type: "array",
-          description: "children",
         },
       },
     },

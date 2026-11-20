@@ -1,5 +1,5 @@
 import type { DefinitionPointer, RefMapRules } from "../types"
-import { schemaRefMap } from "./jsonSchema"
+import { literalRule, schemaRefMap } from "./jsonSchema"
 
 type AsyncApiComponents =
   | "schemas"
@@ -62,6 +62,7 @@ const messageTraitsRefMap: RefMapRules = {
   "/*": {
     "#": asyncApiDefPaths.messageTraits,
     "/headers": schemaRefMap(asyncApiDefPaths.schemas),
+    "/examples": literalRule,
     "/correlationId": { "#": asyncApiDefPaths.correlationIds },
     "/bindings": { "#": asyncApiDefPaths.messageBindings },
   },
@@ -70,6 +71,7 @@ const messageTraitsRefMap: RefMapRules = {
 const messageRefMap: RefMapRules = {
   "#": asyncApiDefPaths.messages,
   "/headers": schemaRefMap(asyncApiDefPaths.schemas),
+  "/examples": literalRule,
   "/correlationId": { "#": asyncApiDefPaths.correlationIds },
   "/traits": messageTraitsRefMap,
   "/payload": schemaRefMap(asyncApiDefPaths.schemas),

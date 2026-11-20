@@ -1,0 +1,21 @@
+{
+  "name": "api-ref-bundler-bench",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "api-ref-bundler compared with its previous release and with popular libraries that bundle or dereference $ref documents",
+  "scripts": {
+    "fixtures": "node fixtures/generate.mjs",
+    "bench": "node --max-old-space-size=8192 run.mjs",
+    "all": "pnpm --dir .. run build && pnpm run fixtures && pnpm run bench"
+  },
+  "devDependencies": {
+    "@apidevtools/json-schema-ref-parser": "16.0.8",
+    "@redocly/openapi-core": "2.82.0",
+    "@scalar/json-magic": "0.21.0",
+    "@scalar/openapi-parser": "0.29.25",
+    "@stoplight/json-ref-resolver": "3.1.6",
+    "api-ref-bundler-0.5.1": "npm:api-ref-bundler@0.5.1",
+    "yaml": "^2.8.0"
+  }
+}

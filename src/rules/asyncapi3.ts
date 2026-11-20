@@ -1,5 +1,5 @@
 import type { DefinitionPointer, RefMapRules } from "../types"
-import { schemaRefMap } from "./jsonSchema"
+import { literalRule, schemaRefMap } from "./jsonSchema"
 
 /**
  * AsyncAPI v3 Reference Map Rules
@@ -79,6 +79,7 @@ const serversRefMap: RefMapRules = {
 
 const channelMessageRefMap: RefMapRules = {
   "/headers": schemaRefMap(asyncApi3DefPaths.schemas),
+  "/examples": literalRule,
   "/correlationId": { "#": asyncApi3DefPaths.correlationIds },
   "/payload": schemaRefMap(asyncApi3DefPaths.schemas),
   "/traits": {
@@ -184,6 +185,7 @@ const componentOperationsRefMap: RefMapRules = {
 const componentMessageRefMap: RefMapRules = {
   "#": asyncApi3DefPaths.messages,
   "/headers": schemaRefMap(asyncApi3DefPaths.schemas),
+  "/examples": literalRule,
   "/correlationId": { "#": asyncApi3DefPaths.correlationIds },
   "/payload": schemaRefMap(asyncApi3DefPaths.schemas),
   "/traits": {
@@ -254,6 +256,7 @@ export const asyncApi3RefMap: RefMapRules = {
       "/*": {
         "#": asyncApi3DefPaths.messageTraits,
         "/headers": schemaRefMap(asyncApi3DefPaths.schemas),
+        "/examples": literalRule,
         "/correlationId": { "#": asyncApi3DefPaths.correlationIds },
         "/tags": {
           "/*": { "#": asyncApi3DefPaths.tags },

@@ -1,0 +1,2 @@
+minimumReleaseAgeExclude:
+  - '@redocly/openapi-core@2.82.0'
