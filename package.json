@@ -53,7 +53,7 @@
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^25.5.0",
     "@vitest/coverage-v8": "^5.1.0",
-    "js-yaml": "^4.1.1",
+    "js-yaml": "^5.5.0",
     "typescript": "^7.0.2",
     "vite-plus": "^1.7.0",
     "vitest": "^5.1.0"
