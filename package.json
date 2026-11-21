@@ -51,7 +51,7 @@
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
-    "@types/node": "^25.5.0",
+    "@types/node": "^26.6.6",
     "@vitest/coverage-v8": "^5.1.0",
     "js-yaml": "^5.5.0",
     "typescript": "^7.0.2",
